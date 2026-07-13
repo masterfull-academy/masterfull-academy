@@ -19,4 +19,4 @@ No uses `service_role`, contraseña de PostgreSQL ni claves secretas en el front
 
 ## Permitir que el profesor elimine resultados
 
-Si la base de datos ya estaba configurada antes de agregar el botón **Eliminar**, abre **SQL Editor** y ejecuta completo `supabase/enable-teacher-result-delete.sql`. La política RLS permite borrar resultados únicamente a usuarios cuyo perfil tenga el rol `teacher`.
+La migración `supabase/migrations/20260713000000_enable_teacher_result_delete.sql` habilita el borrado únicamente para usuarios cuyo perfil tenga el rol `teacher`. Al publicar cambios en `main`, GitHub Actions la aplica con Supabase CLI.
