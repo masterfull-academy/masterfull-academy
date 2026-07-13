@@ -470,6 +470,7 @@ async function refreshResults(showStatus = false) {
 function rowToGrade(row) {
   return {
     id: row.submission_id || row.id,
+    databaseId: row.id,
     submissionId: row.submission_id,
     studentId: row.student_id,
     studentName: row.student_name,
@@ -545,7 +546,26 @@ function filteredTeacherResults() {
   }).sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 function renderTeacherGrades(grades) {
-  $("#teacher-grades-body").innerHTML = grades.length ? grades.map(grade => `<tr><td>${esc(grade.studentName)}</td><td>${esc(grade.studentEmail)}</td><td>${esc(grade.courseName)}</td><td>${esc(grade.examTitle)}</td><td>${grade.attempt || 1}</td><td class="grade">${grade.score} / 20</td><td>${grade.correct} / ${grade.total}</td><td>${Math.round((grade.secondsUsed || 0) / 60)} min</td><td>${esc(grade.completionReason || "-")}</td><td>${formatDate(grade.date)}</td></tr>`).join("") : empty("Aún no hay resultados.", 10);
+  $("#teacher-grades-body").innerHTML = grades.length ? grades.map(grade => `<tr><td>${esc(grade.studentName)}</td><td>${esc(grade.studentEmail)}</td><td>${esc(grade.courseName)}</td><td>${esc(grade.examTitle)}</td><td>${grade.attempt || 1}</td><td class="grade">${grade.score} / 20</td><td>${grade.correct} / ${grade.total}</td><td>${Math.round((grade.secondsUsed || 0) / 60)} min</td><td>${esc(grade.completionReason || "-")}</td><td>${formatDate(grade.date)}</td><td><button class="icon-btn delete delete-result" data-id="${esc(grade.databaseId)}" type="button" aria-label="Eliminar resultado de ${esc(grade.studentName)}">Eliminar</button></td></tr>`).join("") : empty("Aún no hay resultados.", 11);
+  $$(".delete-result").forEach(button => button.addEventListener("click", () => deleteResult(button.dataset.id)));
+}
+async function deleteResult(databaseId) {
+  if (!sb || currentUser?.role !== "teacher") return;
+  const grade = results.find(item => item.databaseId === databaseId);
+  if (!grade) return;
+  if (!confirm(`¿Eliminar definitivamente el intento ${grade.attempt || 1} de ${grade.studentName} en “${grade.examTitle}”?`)) return;
+  const status = $("#teacher-results-status");
+  if (status) status.textContent = "Eliminando resultado...";
+  try {
+    const { error } = await sb.from("results").delete().eq("id", databaseId);
+    if (error) throw error;
+    await refreshResults();
+    renderTeacher();
+    if (status) status.textContent = "Resultado eliminado correctamente.";
+  } catch (error) {
+    console.error("Eliminar resultado:", error);
+    if (status) status.textContent = `No se pudo eliminar: ${translateError(error)}`;
+  }
 }
 function exportGrades() {
   const rows = [["Alumno","Correo","Curso","Examen","Intento","Nota","Aciertos","Total","Tiempo usado","Motivo","Fecha"], ...filteredTeacherResults().map(g => [g.studentName,g.studentEmail,g.courseName,g.examTitle,g.attempt || 1,g.score,g.correct,g.total,g.secondsUsed || 0,g.completionReason || "",formatDate(g.date)])];

@@ -231,6 +231,7 @@ drop policy if exists "profiles_update_own" on public.profiles;
 drop policy if exists "results_insert_own" on public.results;
 drop policy if exists "results_select_own" on public.results;
 drop policy if exists "results_select_teacher" on public.results;
+drop policy if exists "results_delete_teacher" on public.results;
 
 create policy "profiles_select_own"
 on public.profiles
@@ -269,6 +270,12 @@ for select
 to authenticated
 using (public.is_teacher());
 
+create policy "results_delete_teacher"
+on public.results
+for delete
+to authenticated
+using (public.is_teacher());
+
 revoke all on public.profiles from anon;
 revoke all on public.results from anon;
 revoke all on public.profiles from authenticated;
@@ -276,5 +283,5 @@ revoke all on public.results from authenticated;
 
 grant select on public.profiles to authenticated;
 grant update (full_name, email) on public.profiles to authenticated;
-grant select, insert on public.results to authenticated;
+grant select, insert, delete on public.results to authenticated;
 grant usage on schema public to authenticated;

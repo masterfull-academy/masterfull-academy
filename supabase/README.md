@@ -16,3 +16,7 @@ where email = 'CORREO_DEL_PROFESOR';
 ```
 
 No uses `service_role`, contraseña de PostgreSQL ni claves secretas en el frontend. La plataforma solo necesita la Project URL y la publishable key.
+
+## Permitir que el profesor elimine resultados
+
+Si la base de datos ya estaba configurada antes de agregar el botón **Eliminar**, abre **SQL Editor** y ejecuta completo `supabase/enable-teacher-result-delete.sql`. La política RLS permite borrar resultados únicamente a usuarios cuyo perfil tenga el rol `teacher`.
