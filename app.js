@@ -170,9 +170,7 @@ async function fetchProfile(userId) {
 
 async function loadCatalogSafe() {
   const teacherStatus = $("#catalog-status");
-  const studentStatus = $("#student-catalog-status");
   if (teacherStatus) teacherStatus.textContent = "Cargando cursos...";
-  if (studentStatus) studentStatus.textContent = "Cargando cursos...";
   try {
     const response = await fetch(CATALOG_URL, { cache: "no-store" });
     if (!response.ok) throw new Error(`No se pudo cargar ${CATALOG_URL}`);
@@ -183,7 +181,6 @@ async function loadCatalogSafe() {
     publishedExams = loaded.exams;
     const updated = raw.updated_at ? `Última actualización: ${formatDate(raw.updated_at)}.` : "Catálogo cargado.";
     if (teacherStatus) teacherStatus.textContent = updated;
-    if (studentStatus) studentStatus.textContent = updated;
   } catch (error) {
     console.error("Error cargando catálogo:", error);
     catalog = null;
@@ -191,7 +188,6 @@ async function loadCatalogSafe() {
     publishedExams = [];
     const retry = `No se pudieron cargar los cursos. `;
     if (teacherStatus) teacherStatus.innerHTML = `${retry}<button class="btn secondary retry-catalog">Reintentar</button>`;
-    if (studentStatus) studentStatus.innerHTML = `${retry}<button class="btn secondary retry-catalog">Reintentar</button>`;
     $$(".retry-catalog").forEach(button => button.addEventListener("click", async () => { await loadCatalogSafe(); renderApp(); }));
   }
 }
@@ -597,7 +593,6 @@ function renderStudent() {
   $("#student-welcome").textContent = `Hola, ${currentUser.name}`;
   const myGrades = results.filter(grade => grade.studentId === currentUser.id);
   $("#student-stats").innerHTML = stat("Cursos disponibles", new Set(publishedExams.map(exam => exam.courseId)).size, "▦") + stat("Exámenes", publishedExams.length, "▤") + stat("Resultados", myGrades.length, "✓");
-  $("#student-catalog-status").textContent = catalog?.updated_at ? `Última actualización del catálogo: ${formatDate(catalog.updated_at)}. Pendientes por sincronizar: ${pendingResults.length}.` : "No se pudieron cargar los cursos.";
   const courses = publishedCourses.filter(course => publishedExams.some(exam => exam.courseId === course.id));
   $("#student-course-list").innerHTML = courses.length ? courses.map(course => {
     const exams = publishedExams.filter(exam => exam.courseId === course.id);
