@@ -1,0 +1,30 @@
+# Credenciales y configuración privada
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Archivos comprimidos y copias de seguridad
+*.zip
+*.bak
+*.backup
+*.old
+*~
+
+# Carpetas y archivos temporales
+tmp/
+temp/
+.tmp/
+.temp/
+*.tmp
+*.temp
+
+# Dependencias y archivos del sistema/editor
+node_modules/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
