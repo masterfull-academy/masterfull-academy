@@ -47,7 +47,18 @@ function esc(value) {
 }
 function empty(message, colspan = 1) { return `<tr><td colspan="${colspan}" class="empty">${esc(message)}</td></tr>`; }
 function emptyCard(message) { return `<div class="empty">${esc(message)}</div>`; }
-function stat(label, value, icon) { return `<article><span>${icon}</span><div><strong>${esc(value)}</strong><small>${esc(label)}</small></div></article>`; }
+function modernIcon(name) {
+  const paths = {
+    courses: `<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/>`,
+    exams: `<path d="M9 5h10a2 2 0 0 1 2 2v12H9a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="M7 7H5a2 2 0 0 0-2 2v10h14M12 9h5M12 13h5"/>`,
+    results: `<path d="m5 12 4 4L19 6"/><circle cx="12" cy="12" r="9"/>`,
+    course: `<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8"/>`
+  };
+  const aliases = { "▦": "courses", "▤": "exams", "✓": "results", "◇": "course" };
+  const key = aliases[name] || name;
+  return `<svg class="modern-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[key] || paths.course}</svg>`;
+}
+function stat(label, value, icon) { return `<article><span>${modernIcon(icon)}</span><div><strong>${esc(value)}</strong><small>${esc(label)}</small></div></article>`; }
 function formatDate(value) { return value ? new Date(value).toLocaleString("es-PE") : "-"; }
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"','""')}"`; }
 function slug(value) {
@@ -529,11 +540,11 @@ function renderTeacher() {
 function renderTeacherCourses() {
   const published = publishedCourses.map(course => {
     const count = publishedExams.filter(exam => exam.courseId === course.id).length;
-    return `<article class="course-card"><div class="course-icon">▦</div><span class="badge">${count} examen(es)</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción")} · Profesor: ${esc(course.teacherName)}</p><div class="status published">Publicado para todos</div><div class="card-actions"><button class="icon-btn edit-published-course" data-id="${esc(course.id)}" type="button">Editar</button><button class="icon-btn delete delete-published-course" data-id="${esc(course.id)}" type="button">Eliminar</button></div></article>`;
+    return `<article class="course-card"><div class="course-icon">${modernIcon("course")}</div><span class="badge">${count} examen(es)</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción")} · Profesor: ${esc(course.teacherName)}</p><div class="status published">Publicado para todos</div><div class="card-actions"><button class="icon-btn edit-published-course" data-id="${esc(course.id)}" type="button">Editar</button><button class="icon-btn delete delete-published-course" data-id="${esc(course.id)}" type="button">Eliminar</button></div></article>`;
   });
   const local = drafts.courses.map(course => {
     const count = drafts.exams.filter(exam => exam.courseId === course.id).length;
-    return `<article class="course-card draft-card"><div class="course-icon">◇</div><span class="badge">${count} borrador(es)</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción")}</p><div class="notice compact">Borrador local. Todavía no está publicado para los alumnos.</div><div class="card-actions"><button class="btn secondary create-exam-course" data-id="${esc(course.id)}">Crear examen</button><button class="icon-btn edit-course" data-id="${esc(course.id)}">Editar</button><button class="icon-btn delete delete-course" data-id="${esc(course.id)}">Eliminar</button></div></article>`;
+    return `<article class="course-card draft-card"><div class="course-icon">${modernIcon("course")}</div><span class="badge">${count} borrador(es)</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción")}</p><div class="notice compact">Borrador local. Todavía no está publicado para los alumnos.</div><div class="card-actions"><button class="btn secondary create-exam-course" data-id="${esc(course.id)}">Crear examen</button><button class="icon-btn edit-course" data-id="${esc(course.id)}">Editar</button><button class="icon-btn delete delete-course" data-id="${esc(course.id)}">Eliminar</button></div></article>`;
   });
   return published.concat(local).join("") || emptyCard("Crea un curso local o agrega cursos en data/catalog.json.");
 }
@@ -618,7 +629,7 @@ function renderStudent() {
   const courses = publishedCourses.filter(course => publishedExams.some(exam => exam.courseId === course.id));
   $("#student-course-list").innerHTML = courses.length ? courses.map(course => {
     const exams = publishedExams.filter(exam => exam.courseId === course.id);
-    return `<article class="student-course panel"><div class="course-heading"><div class="course-icon">▦</div><div><span class="eyebrow">CURSO</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción")} · Profesor: ${esc(course.teacherName || "Profesor")}</p></div></div><div class="exam-rows">${exams.map(exam => renderStudentExamRow(exam, myGrades)).join("")}</div></article>`;
+    return `<article class="student-course panel"><div class="course-heading"><div class="course-icon">${modernIcon("course")}</div><div><span class="eyebrow">CURSO</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción")} · Profesor: ${esc(course.teacherName || "Profesor")}</p></div></div><div class="exam-rows">${exams.map(exam => renderStudentExamRow(exam, myGrades)).join("")}</div></article>`;
   }).join("") : emptyCard("Todavía no hay cursos con exámenes publicados.");
   $("#student-grades-body").innerHTML = myGrades.length ? myGrades.map(grade => {
     const exam = publishedExams.find(item => item.id === grade.examId);
