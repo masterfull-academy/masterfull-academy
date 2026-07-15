@@ -535,9 +535,9 @@ body { background: #edf2f7; }
   box-shadow: 10px 0 35px #0f172a1f;
   backdrop-filter: none;
 }
-.app-shell-mode .brand { position: relative; align-items: center; padding: 4px 5px 31px; color: #fff; border-bottom: 1px solid #ffffff18; }
-.app-shell-mode .brand > span:last-child { display: block; min-width: 0; white-space: nowrap; font-size: 18px; font-weight: 700; line-height: 1.3; letter-spacing: -.02em; }
-.app-shell-mode .brand::after { content: "Panel educativo"; position: absolute; left: 58px; top: 33px; color: #8da0bd; font-size: 10px; font-weight: 450; line-height: 1.45; letter-spacing: .055em; }
+.app-shell-mode .brand { position: relative; align-items: center; padding: 8px 5px 42px; color: #fff; border-bottom: 1px solid #ffffff18; }
+.app-shell-mode .brand > span:last-child { display: block; min-width: 0; white-space: nowrap; font-size: 20px; font-weight: 720; line-height: 1.25; letter-spacing: -.025em; }
+.app-shell-mode .brand::after { content: "Panel educativo"; position: absolute; left: 58px; top: 41px; color: #8da0bd; font-size: 10.5px; font-weight: 450; line-height: 1.5; letter-spacing: .06em; }
 .app-shell-mode .brand-mark { background: linear-gradient(145deg,#22d3ee,#0891b2); box-shadow: 0 10px 25px #06b6d43b; }
 .app-shell-mode #session-area { display: flex; flex: 1; align-items: flex-end; }
 .app-shell-mode .user-menu { width: 100%; display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 11px; padding-top: 18px; border-top: 1px solid #ffffff18; }
