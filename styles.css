@@ -137,11 +137,12 @@ footer { text-align: center; padding: 20px; color: var(--muted); font-size: 13px
 .auth-card { padding: 30px; }
 .password-field { position: relative; display: block; }
 .password-field input { padding-right: 48px; }
-.password-toggle { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #475467; }
-.password-toggle::before { content: ""; width: 20px; height: 13px; border: 2px solid currentColor; border-radius: 70% 30% 70% 30%; transform: rotate(45deg); }
-.password-toggle::after { content: ""; position: absolute; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.password-toggle.is-visible::before { height: 10px; border-width: 0 0 2px; border-radius: 0 0 50% 50%; transform: rotate(0); }
-.password-toggle.is-visible::after { width: 21px; height: 2px; border-radius: 99px; background: currentColor; transform: rotate(-42deg); }
+.password-toggle { position:absolute; right:7px; top:50%; transform:translateY(-50%); width:36px; height:36px; display:grid; place-items:center; border:0; border-radius:8px; background:transparent; color:#475467; }
+.password-eye { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.password-eye.eye-open { display:none; }
+.password-toggle.is-visible .eye-closed { display:none; }
+.password-toggle.is-visible .eye-open { display:block; }
+.password-eye .eye-slash { stroke-width:2.2; }
 .password-toggle:hover, .password-toggle:focus-visible { background: var(--pale); outline: none; }
 .auth-switch { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); padding: 4px; border-radius: 11px; margin-bottom: 28px; }
 .auth-tab { border: 0; background: transparent; padding: 11px; border-radius: 8px; color: var(--muted); font-weight: 700; }
