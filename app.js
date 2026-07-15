@@ -30,7 +30,6 @@ let soundEnabled = localStorage.getItem(SOUND_KEY) !== "false";
 let audioContext = null;
 let minuteWarningPlayed = false;
 let appReady = false;
-let registrationRedirectPending = false;
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -108,7 +107,7 @@ function translateError(error) {
   const msg = String(error?.message || error || "").toLowerCase();
   if (!msg) return "Ocurrió un problema. Inténtalo nuevamente.";
   if (msg.includes("invalid login credentials")) return "Correo o contraseña incorrectos.";
-  if (msg.includes("email not confirmed")) return "La cuenta todavía no está habilitada. Inténtalo nuevamente en unos segundos.";
+  if (msg.includes("email not confirmed")) return "Debes confirmar tu correo antes de ingresar.";
   if (msg.includes("already registered") || msg.includes("user already")) return "Este correo ya está registrado.";
   if (msg.includes("password")) return "La contraseña no cumple los requisitos. Usa mínimo 8 caracteres.";
   if (msg.includes("duplicate key")) return "Ese registro ya existe. No se duplicó.";
@@ -141,7 +140,7 @@ async function initApp() {
     return;
   }
   sb.auth.onAuthStateChange(async (_event, session) => {
-    if (!appReady || registrationRedirectPending) return;
+    if (!appReady) return;
     await setSessionFromSupabase(session, false);
     if (currentUser) await loadCourseChanges();
     renderApp();
@@ -435,25 +434,18 @@ async function registerUser(event) {
   try {
     if (password.length < 8) throw new Error("password");
     if (password !== confirmation) { $("#register-error").textContent = "Las contraseñas no coinciden."; return; }
-    registrationRedirectPending = true;
     const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
     if (error) throw error;
-    if (data.session) await sb.auth.signOut({ scope: "local" });
-    $("#login-email").value = email;
-    $("#login-password").value = "";
-    $$(".auth-tab").forEach(tab => tab.classList.toggle("active", tab.dataset.auth === "login"));
-    $("#login-form").classList.remove("hidden");
-    $("#register-form").classList.add("hidden");
-    $("#login-error").className = "success";
-    $("#login-error").textContent = "Cuenta creada correctamente. Ya puedes iniciar sesión.";
-    event.currentTarget.reset();
-    $("#login-password").focus();
-    registrationRedirectPending = false;
+    if (!data.session) {
+      $("#register-error").className = "success";
+      $("#register-error").textContent = "Cuenta creada. Revisa tu correo para confirmar el registro.";
+      return;
+    }
+    await setSessionFromSupabase(data.session);
   } catch (error) {
     console.error("Registro:", error);
     $("#register-error").textContent = translateError(error);
   } finally {
-    registrationRedirectPending = false;
     button.disabled = false;
   }
 }
