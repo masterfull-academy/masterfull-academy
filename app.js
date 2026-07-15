@@ -12,6 +12,8 @@ let currentUser = null;
 let catalog = null;
 let catalogCourses = [];
 let catalogExams = [];
+let dynamicCourses = [];
+let dynamicExams = [];
 let courseChanges = [];
 let publishedCourses = [];
 let publishedExams = [];
@@ -209,22 +211,38 @@ async function loadCatalogSafe() {
 
 function applyCourseChanges() {
   const changes = new Map(courseChanges.map(change => [change.course_id, change]));
-  publishedCourses = catalogCourses.filter(course => !changes.get(course.id)?.deleted).map(course => {
+  const coursesById = new Map(catalogCourses.map(course => [course.id, course]));
+  dynamicCourses.forEach(course => coursesById.set(course.id, course));
+  publishedCourses = [...coursesById.values()].filter(course => !changes.get(course.id)?.deleted).map(course => {
     const change = changes.get(course.id);
     return change ? { ...course, name: change.name || course.name, description: change.description ?? course.description } : course;
   });
   const visibleCourseIds = new Set(publishedCourses.map(course => course.id));
-  publishedExams = catalogExams.filter(exam => visibleCourseIds.has(exam.courseId));
+  const examsById = new Map(catalogExams.map(exam => [exam.id, exam]));
+  dynamicExams.forEach(exam => examsById.set(exam.id, exam));
+  publishedExams = [...examsById.values()].filter(exam => visibleCourseIds.has(exam.courseId));
 }
 
 async function loadCourseChanges() {
   if (!sb || !currentUser) return;
+  await loadDynamicCourses();
   const { data, error } = await sb.from("course_changes").select("course_id, name, description, deleted, updated_at");
   if (error) {
     console.error("No se pudieron cargar los cambios de cursos:", error);
     courseChanges = [];
   } else courseChanges = data || [];
   applyCourseChanges();
+}
+async function loadDynamicCourses() {
+  const { data, error } = await sb.from("published_courses").select("course_id, name, description, teacher_name, exams, updated_at").eq("published", true);
+  if (error) {
+    if (String(error.code) !== "42P01") console.error("No se pudieron cargar los cursos publicados desde Supabase:", error);
+    dynamicCourses = [];
+    dynamicExams = [];
+    return;
+  }
+  dynamicCourses = (data || []).map(row => ({ id: row.course_id, name: row.name, description: row.description || "", teacherName: row.teacher_name || "Profesor", updatedAt: row.updated_at, dynamic: true }));
+  dynamicExams = (data || []).flatMap(row => (Array.isArray(row.exams) ? row.exams : []).map((exam, index) => normalizeExam(exam, `Supabase: ${row.name}`, row.course_id, index)));
 }
 
 async function normalizeCatalog(raw) {
@@ -593,27 +611,41 @@ function exportCourseDraft(id) {
   if (!course) return;
   download(JSON.stringify({ schema_version: 1, id: course.id, name: course.name, description: course.description || "", teacher_name: course.teacherName || currentUser.name }, null, 2), `${slug(course.id)}.json`, "application/json;charset=utf-8");
 }
-function publishCourseDraft(id, button) {
+async function publishCourseDraft(id, button) {
   const course = drafts.courses.find(item => item.id === id);
   const exams = drafts.exams.filter(exam => exam.courseId === id);
   if (!course) return;
-  if (!exams.length) { alert(`El curso ${course.name} necesita al menos un examen antes de preparar su publicación.`); return; }
+  const status = $("#course-publish-status");
+  if (!exams.length) { status.className = "course-publish-status error"; status.textContent = `El curso ${course.name} necesita al menos un examen antes de publicarse.`; return; }
   button.disabled = true;
-  const bundle = {
-    schema_version: 1,
-    course: { id: course.id, name: course.name, description: course.description || "", teacher_name: course.teacherName || currentUser.name },
-    exams: exams.map(examToJsonSchema),
-    catalog_entry: {
-      id: course.id,
+  status.className = "course-publish-status";
+  status.textContent = `Publicando ${course.name}...`;
+  try {
+    const { error } = await sb.from("published_courses").upsert({
+      course_id: course.id,
       name: course.name,
       description: course.description || "",
       teacher_name: course.teacherName || currentUser.name,
-      exams: exams.map(exam => `./data/exams/${slug(exam.id)}.json`)
-    }
-  };
-  download(JSON.stringify(bundle, null, 2), `${slug(course.id)}-publicacion.json`, "application/json;charset=utf-8");
-  button.disabled = false;
-  alert(`Se preparó el archivo de publicación de ${course.name}. Súbelo al repositorio y registra sus exámenes en data/catalog.json para que sea visible a los alumnos. El borrador local se conservará hasta confirmar la publicación.`);
+      exams: exams.map(examToJsonSchema),
+      published: true,
+      updated_by: currentUser.id
+    }, { onConflict: "course_id" });
+    if (error) throw error;
+    drafts.courses = drafts.courses.filter(item => item.id !== id);
+    drafts.exams = drafts.exams.filter(exam => exam.courseId !== id);
+    saveDrafts();
+    await loadCourseChanges();
+    renderTeacher();
+    const refreshedStatus = $("#course-publish-status");
+    refreshedStatus.className = "course-publish-status success";
+    refreshedStatus.textContent = `${course.name} se publicó correctamente y ya está disponible para los alumnos.`;
+  } catch (error) {
+    console.error("Publicar curso:", error);
+    status.className = "course-publish-status error";
+    status.textContent = `No se pudo publicar: ${translateError(error)}`;
+  } finally {
+    button.disabled = false;
+  }
 }
 function fillTeacherFilters() {
   $("#teacher-course-filter").innerHTML = `<option value="">Todos los cursos</option>${publishedCourses.map(course => `<option value="${esc(course.id)}">${esc(course.name)}</option>`).join("")}`;

@@ -636,6 +636,9 @@ body { background: #edf2f7; }
 .app-shell-mode .tab.active { box-shadow: inset 0 -3px 0 #67e8f9,0 7px 15px #0e749025; }
 .course-tools { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 10px 12px; border-radius: 14px; background: #fff; box-shadow: 0 8px 24px #1e293b0b; }
 .course-tools input { flex: 1; max-width: 430px; margin: 0; }
+.course-publish-status { flex: 1; margin: 0; color: #65758a; font-size: 13px; text-align: right; }
+.course-publish-status.success { color: #087657; font-weight: 650; }
+.course-publish-status.error { color: #c9364a; font-weight: 650; }
 .app-shell-mode #teacher-stats { grid-template-columns: repeat(2,1fr); }
 .app-shell-mode .compact-course { min-height: 0; padding: 18px; }
 .course-card-head { display: flex; align-items: center; gap: 12px; }
@@ -665,6 +668,7 @@ body { background: #edf2f7; }
 }
 @media (max-width:620px) {
   .course-tools { align-items: stretch; flex-direction: column; }.course-tools input { max-width: none; }
+  .course-publish-status { text-align: left; }
   .course-card .card-actions > * { flex: 1 1 auto; }
   .app-shell-mode #teacher-stats { grid-template-columns: 1fr; }
 }
