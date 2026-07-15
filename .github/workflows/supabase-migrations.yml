@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - "app.js"
       - ".github/workflows/supabase-migrations.yml"
   workflow_dispatch:
 
@@ -28,6 +30,23 @@ jobs:
         uses: supabase/setup-cli@v2
         with:
           version: 2.109.1
+
+      - name: Desactivar confirmación de correo
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request PATCH \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data '{"mailer_autoconfirm":true}' \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_ID/config/auth"
+
+      - name: Verificar confirmación automática
+        run: |
+          value=$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_ID/config/auth" \
+            | jq -r '.mailer_autoconfirm')
+          test "$value" = "true"
 
       - name: Enlazar proyecto de Supabase
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
