@@ -806,7 +806,7 @@ function renderStudent() {
     const exam = publishedExams.find(item => item.id === grade.examId);
     const attemptsUsed = myGrades.filter(item => item.examId === grade.examId).length;
     const canReview = grade.review?.length && attemptsUsed >= (exam?.attemptsAllowed || 1);
-    return `<tr><td>${esc(grade.courseName)}</td><td>${esc(grade.examTitle)}</td><td>${grade.attempt || 1}</td><td class="grade">${grade.score} / 20</td><td>${grade.correct} / ${grade.total}</td><td>${formatDate(grade.date)}</td><td>${canReview ? `<button class="icon-btn review-attempt" data-id="${esc(grade.id)}">Ver respuestas</button>` : `<span class="muted small">Al agotar intentos</span>`}</td></tr>`;
+    return `<tr><td class="student-grade-course">${esc(grade.courseName)}</td><td class="student-grade-exam">${esc(grade.examTitle)}</td><td class="student-grade-count">${grade.attempt || 1}</td><td class="grade">${grade.score} / 20</td><td class="student-grade-count">${grade.correct} / ${grade.total}</td><td class="student-grade-date"><span>${formatDateOnly(grade.date)}</span><small>${formatTimeOnly(grade.date)}</small></td><td>${canReview ? `<button class="icon-btn review-attempt" data-id="${esc(grade.id)}">Ver respuestas</button>` : `<span class="muted small">Al agotar intentos</span>`}</td></tr>`;
   }).join("") : empty("Todavía no has rendido exámenes.", 7);
   $$(".start-exam").forEach(button => button.addEventListener("click", () => startExam(button.dataset.id)));
   $$(".review-exam").forEach(button => button.addEventListener("click", () => showExamReviews(button.dataset.id)));
