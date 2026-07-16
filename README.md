@@ -10,6 +10,17 @@ Plataforma educativa estática para GitHub Pages con cursos y exámenes cargados
 - **Supabase PostgreSQL** guarda perfiles, roles y resultados.
 - **localStorage** solo conserva preferencias de sonido, borradores locales del constructor, intentos activos y cola temporal de resultados pendientes.
 
+## Espacio docente tipo LMS
+
+El panel del profesor está organizado como un espacio de gestión académica:
+
+- **Inicio** resume cursos, borradores, evaluaciones e intentos registrados.
+- **Cursos** permite crear, editar, publicar y eliminar espacios de aprendizaje.
+- **Evaluaciones** reúne el constructor, la importación y la exportación JSON.
+- **Calificaciones** centraliza intentos, filtros, revisión y exportación CSV.
+
+La reorganización visual no elimina la portabilidad de los JSON. `data/catalog.json` y `data/exams/` continúan funcionando como catálogo estático, mientras que la publicación directa y los resultados usan Supabase cuando está configurado.
+
 ## Configurar `config.js`
 
 1. Copia `config.example.js` como `config.js` si necesitas recrearlo.

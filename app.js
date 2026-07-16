@@ -412,8 +412,10 @@ function bindStaticEvents() {
   $("#login-form").addEventListener("submit", loginUser);
   $("#profile-form").addEventListener("submit", saveProfile);
   $("#new-course-btn").addEventListener("click", () => openCourseModal());
+  $$(".overview-new-course").forEach(button => button.addEventListener("click", () => openCourseModal()));
   $("#course-search").addEventListener("input", renderTeacherCourseList);
   $("#new-exam-btn").addEventListener("click", () => openExamModal());
+  $$(".overview-new-exam").forEach(button => button.addEventListener("click", () => openExamModal()));
   $("#course-form").addEventListener("submit", saveCourseDraft);
   $("#publish-course-form").addEventListener("submit", publishSelectedCourseExams);
   $("#exam-editor-form").addEventListener("submit", saveExamDraft);
@@ -582,12 +584,33 @@ function renderTeacher() {
   $("#courses-tab-count").textContent = publishedCourses.length + drafts.courses.length;
   $("#exams-tab-count").textContent = exams.length;
   $("#grades-tab-count").textContent = results.length;
+  renderTeacherOverview();
   renderTeacherCourseList(false);
   $("#teacher-exam-list").innerHTML = exams.length ? exams.map(renderTeacherExamCard).join("") : emptyCard("Todavía no hay exámenes publicados ni borradores locales.");
   fillTeacherFilters();
   renderTeacherGrades(filteredTeacherResults());
   bindTeacherActions();
   $$(".stat-card").forEach(card => card.addEventListener("click", () => activateStat(card.dataset.statAction)));
+}
+function renderTeacherOverview() {
+  const allCourses = [...publishedCourses, ...drafts.courses];
+  const allExams = [...publishedExams, ...drafts.exams];
+  const recentCourses = allCourses.slice(0, 4);
+  const draftCount = drafts.courses.length + drafts.exams.length;
+  const courseRows = recentCourses.length ? recentCourses.map(course => {
+    const examCount = allExams.filter(exam => exam.courseId === course.id).length;
+    const isDraft = drafts.courses.some(item => item.id === course.id);
+    return `<article class="overview-course-row"><span class="overview-course-color" aria-hidden="true"></span><div><strong>${esc(course.name)}</strong><small>${quantity(examCount, "evaluación", "evaluaciones")} · ${isDraft ? "Borrador local" : "Publicado"}</small></div><button class="overview-row-action create-exam-course" data-id="${esc(course.id)}" type="button">+ Evaluación</button></article>`;
+  }).join("") : `<div class="overview-empty"><strong>Tu espacio está listo</strong><p>Crea el primer curso y después agrega su banco de preguntas.</p><button class="btn primary overview-new-course-dynamic" type="button">Crear primer curso</button></div>`;
+  $("#teacher-overview").innerHTML = `
+    <section class="overview-panel overview-courses-panel">
+      <div class="overview-panel-head"><div><span class="eyebrow">CURSOS RECIENTES</span><h3>Tu contenido</h3></div><button class="overview-link" data-overview-tab="teacher-courses" type="button">Ver todos</button></div>
+      <div class="overview-course-list">${courseRows}</div>
+    </section>
+    <aside class="overview-side">
+      <section class="overview-panel overview-action-panel"><span class="eyebrow">ACCIÓN RÁPIDA</span><h3>Construye una evaluación</h3><p>Configura intentos, tiempo, preguntas aleatorias e importa contenido JSON.</p><button class="btn primary overview-new-exam-dynamic" type="button">Crear evaluación</button></section>
+      <section class="overview-panel overview-status-panel"><div><span>Borradores pendientes</span><strong>${draftCount}</strong></div><div><span>Intentos registrados</span><strong>${results.length}</strong></div><button class="overview-link" data-overview-tab="teacher-grades" type="button">Abrir calificaciones</button></section>
+    </aside>`;
 }
 function renderTeacherCourseList(bind = true) {
   $("#teacher-course-list").innerHTML = renderTeacherCourses();
@@ -620,6 +643,9 @@ function renderTeacherExamCard(exam) {
   return `<article class="course-card ${isDraft ? "draft-card" : ""}"><div class="status ${exam.published ? "published" : ""}">${isDraft ? "Borrador local" : "Publicado"}</div><span class="eyebrow">${esc(course?.name || "Curso no encontrado")}</span><h3>${esc(exam.title)}</h3><p>Banco: ${quantity(exam.questions.length, "pregunta")} · Alumno: ${quantity(exam.questionsToShow, "pregunta")} · ${exam.minutes} minutos · ${quantity(exam.attemptsAllowed, "intento")} · ${exam.optionCount} opciones</p><div class="card-actions">${isDraft ? `<button class="btn secondary edit-exam" data-id="${esc(exam.id)}">Editar</button><button class="btn secondary export-draft" data-id="${esc(exam.id)}">Exportar JSON</button><button class="icon-btn delete delete-exam" data-id="${esc(exam.id)}">Eliminar</button>` : ""}</div></article>`;
 }
 function bindTeacherActions() {
+  $$("[data-overview-tab]").forEach(button => button.addEventListener("click", () => switchTab("teacher", button.dataset.overviewTab, $(`[data-teacher-tab="${button.dataset.overviewTab}"]`))));
+  $$(".overview-new-course-dynamic").forEach(button => button.addEventListener("click", () => openCourseModal()));
+  $$(".overview-new-exam-dynamic").forEach(button => button.addEventListener("click", () => openExamModal()));
   $$(".view-course").forEach(button => button.addEventListener("click", () => switchTab("teacher", "teacher-exams", $('[data-teacher-tab="teacher-exams"]'))));
   $$(".create-exam-course").forEach(button => button.addEventListener("click", () => openExamModal(null, button.dataset.id)));
   $$(".edit-course").forEach(button => button.addEventListener("click", () => openCourseModal(button.dataset.id)));
