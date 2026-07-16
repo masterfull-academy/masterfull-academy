@@ -1495,6 +1495,26 @@ body,.app-shell-mode main { background: #f4f7fa; }
 .app-shell-mode .user-identity strong { font-weight: 600; }
 .app-shell-mode .user-identity small { font-weight: 400; }
 
+/* Mantiene siempre accesibles las acciones de cuenta en la barra lateral. */
+.app-shell-mode .topbar { overflow: hidden; }
+.app-shell-mode #session-area { flex: 1 1 auto; overflow: hidden; }
+.app-shell-mode .shell-teacher-nav { min-height: 0; flex: 1 1 auto; align-content: start; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ffffff24 transparent; }
+.app-shell-mode .user-menu { flex: 0 0 auto; margin-top: 0; background: #243447; }
+
+@media (min-width:901px) and (max-height:720px) {
+  .app-shell-mode .topbar { padding: 15px; }
+  .app-shell-mode .brand { padding: 4px 3px 25px; }
+  .app-shell-mode .brand::after { top: 31px; }
+  .app-shell-mode .shell-teacher-nav { gap: 3px; margin: 12px 0; }
+  .app-shell-mode .shell-nav-label { margin-bottom: 5px; padding-bottom: 8px; }
+  .app-shell-mode .shell-nav-item { min-height: 38px; padding: 7px 9px; }
+  .app-shell-mode .user-menu { gap: 8px; padding-top: 11px; }
+  .app-shell-mode .user-avatar { width: 40px; height: 40px; }
+  .app-shell-mode .user-actions { gap: 2px; margin-top: 0; padding-top: 6px; }
+  .app-shell-mode .user-actions .btn { min-height: 34px; padding: 6px 9px; }
+  .app-shell-mode .user-actions .logout-btn { margin-top: 0; padding-top: 7px; }
+}
+
 .app-shell-mode .teacher-page-head h2 { font-weight: 600; }
 .app-shell-mode .teacher-section-title h3 { font-weight: 600; }
 .app-shell-mode .course-card h3,
