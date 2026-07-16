@@ -119,7 +119,7 @@ th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .student-result-toggle::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .18s; }
 .student-result-group[open] .student-result-toggle::before { transform: rotate(225deg); }
 .student-grade-list { padding: 0 14px 14px; border-top: 1px solid var(--line); background: #fbfbfd; }
-.student-grade-row { display: grid; grid-template-columns: minmax(190px,1.4fr) minmax(110px,.7fr) minmax(70px,.45fr) minmax(185px,1fr) auto; align-items: start; gap: 18px; padding: 16px 6px; border-bottom: 1px solid var(--line); }
+.student-grade-row { display: grid; grid-template-columns: minmax(190px,1.4fr) minmax(110px,.7fr) minmax(70px,.45fr) minmax(100px,.65fr) minmax(120px,.75fr) auto; align-items: start; gap: 18px; padding: 16px 6px; border-bottom: 1px solid var(--line); }
 .student-grade-row:last-child { border-bottom: 0; }
 .student-grade-row > div { display: flex; min-width: 0; align-self: start; flex-direction: column; gap: 4px; }
 .student-grade-row small { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
@@ -328,9 +328,8 @@ footer { text-align: center; padding: 20px; color: var(--muted); font-size: 13px
   *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 @media (max-width: 1050px) {
-  .student-grade-row { grid-template-columns: 1.4fr .7fr .45fr auto; }
-  .student-grade-row .grade-delivery { grid-column: 1 / 4; }
-  .student-grade-row .grade-action { grid-column: 4; grid-row: 1 / 3; }
+  .student-grade-row { grid-template-columns: 1.4fr .7fr .45fr .7fr .75fr; }
+  .student-grade-row .grade-action { grid-column: 1 / -1; align-items: flex-end; }
 }
 @media (max-width: 780px) {
   .topbar { height: auto; padding: 14px 18px; align-items: flex-start; }
@@ -371,7 +370,7 @@ footer { text-align: center; padding: 20px; color: var(--muted); font-size: 13px
   .student-best-score { grid-column: 2; align-items: flex-start; padding: 0; }
   .student-result-toggle { grid-column: 3; grid-row: 1 / 3; }
   .student-grade-row { grid-template-columns: 1fr 1fr; gap: 15px; padding: 17px 4px; }
-  .student-grade-row .grade-exam, .student-grade-row .grade-delivery, .student-grade-row .grade-action { grid-column: 1 / -1; grid-row: auto; }
+  .student-grade-row .grade-exam, .student-grade-row .grade-action { grid-column: 1 / -1; grid-row: auto; }
   .student-grade-row .grade-action { align-items: stretch; padding: 12px 0 0; border-top: 1px solid var(--line); border-left: 0; }
   .student-game-mode .dashboard-head { padding: 22px 20px; }
   .student-game-mode .dashboard-head::after { display: none; }
@@ -1286,7 +1285,7 @@ body,.app-shell-mode main { background: #f4f7fa; }
 .app-shell-mode .student-best-score small { color: #778698; font-weight: 400; }
 .app-shell-mode .student-best-score strong { color: #0f7891; font-weight: 650; }
 .app-shell-mode .student-grade-list { padding: 5px 20px 15px; border-top: 0; background: #fbfcfe; }
-.app-shell-mode .student-grade-row { grid-template-columns: minmax(180px,1.35fr) 94px 72px minmax(165px,1fr) auto; gap: 16px; padding: 20px 0; border-color: #e9edf2; }
+.app-shell-mode .student-grade-row { grid-template-columns: minmax(180px,1.35fr) 94px 72px 104px 118px auto; gap: 14px; padding: 20px 0; border-color: #e9edf2; }
 .app-shell-mode .student-grade-row small { color: #788799; font-size: 9px; font-weight: 500; letter-spacing: .055em; }
 .app-shell-mode .student-grade-row strong { color: #2c3d50; font-size: 13.5px; font-weight: 550; line-height: 1.4; }
 .app-shell-mode .student-grade-row .grade { color: #0f7891; font-size: 16px; font-weight: 650; }
@@ -1295,7 +1294,7 @@ body,.app-shell-mode main { background: #f4f7fa; }
 .app-shell-mode .delete-result { min-width: 72px; color: #c64450; background: #fff1f2; }
 
 @media (max-width:1050px) {
-  .app-shell-mode .student-grade-row { grid-template-columns: minmax(180px,1.3fr) 90px 70px minmax(150px,1fr); }
+  .app-shell-mode .student-grade-row { grid-template-columns: minmax(180px,1.3fr) 90px 70px 100px 112px; }
   .app-shell-mode .student-grade-row .grade-action { grid-column: 1 / -1; align-items: flex-end; }
 }
 @media (max-width:620px) {
@@ -1303,7 +1302,6 @@ body,.app-shell-mode main { background: #f4f7fa; }
   .app-shell-mode .student-grade-list { padding: 3px 16px 12px; }
   .app-shell-mode .student-grade-row { grid-template-columns: 1fr 1fr; gap: 14px; padding: 18px 0; }
   .app-shell-mode .student-grade-row .grade-exam,
-  .app-shell-mode .student-grade-row .grade-delivery,
   .app-shell-mode .student-grade-row .grade-action { grid-column: 1 / -1; }
   .app-shell-mode .student-grade-row .grade-action { align-items: flex-end; padding-top: 4px; }
 }

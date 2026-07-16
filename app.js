@@ -52,6 +52,8 @@ function empty(message, colspan = 1) { return `<tr><td colspan="${colspan}" clas
 function emptyCard(message) { return `<div class="empty">${esc(message)}</div>`; }
 function quantity(value, singular, plural = `${singular}s`) { return `${value} ${value === 1 ? singular : plural}`; }
 function shortDate(value) { return value ? new Date(value).toLocaleDateString("es-PE") : ""; }
+function formatDateOnly(value) { return value ? new Date(value).toLocaleDateString("es-PE", { day:"2-digit", month:"2-digit", year:"numeric" }) : "-"; }
+function formatTimeOnly(value) { return value ? new Date(value).toLocaleTimeString("es-PE", { hour:"2-digit", minute:"2-digit", second:"2-digit" }) : "-"; }
 function modernIcon(name) {
   const paths = {
     courses: `<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/>`,
@@ -756,7 +758,8 @@ function renderTeacherGrades(grades) {
         <div class="grade-exam"><small>Evaluación</small><strong>${esc(grade.examTitle)}</strong><span>${esc(grade.courseName)} · Intento ${grade.attempt || 1}</span></div>
         <div><small>Nota</small><strong class="grade">${grade.score} / 20</strong><span>${grade.correct} de ${grade.total} aciertos</span></div>
         <div><small>Tiempo</small><strong>${Math.round((grade.secondsUsed || 0) / 60)} min</strong></div>
-        <div class="grade-delivery"><small>Fecha</small><strong>${formatDate(grade.date)}</strong></div>
+        <div class="grade-date"><small>Fecha</small><strong>${formatDateOnly(grade.date)}</strong></div>
+        <div class="grade-hour"><small>Hora</small><strong>${formatTimeOnly(grade.date)}</strong></div>
         <div class="grade-action"><button class="icon-btn delete delete-result" data-id="${esc(grade.databaseId)}" type="button" aria-label="Eliminar resultado de ${esc(student.name)}">Eliminar</button></div>
       </article>`).join("")}</div>
     </details>`;
