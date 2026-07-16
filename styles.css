@@ -1240,3 +1240,70 @@ body,.app-shell-mode main { background: #f4f7fa; }
   .teacher-workspace { padding: 0; }
   .teacher-page-head { margin: 0 0 24px; padding: 0 0 20px; }
 }
+
+/* Consolidación final: una barra, tipografía descansada y tarjetas ligeras */
+.app-shell-mode .topbar { background: #243447; }
+.app-shell-mode .teacher-workspace-nav { display: none !important; }
+.app-shell-mode .teacher-lms-shell { display: block !important; grid-template-columns: 1fr !important; }
+.app-shell-mode .teacher-head-actions { display: none !important; }
+.app-shell-mode,
+.app-shell-mode button,
+.app-shell-mode input,
+.app-shell-mode textarea,
+.app-shell-mode select { font-family: "Segoe UI Variable Text","Segoe UI Variable","Aptos","Segoe UI",ui-sans-serif,system-ui,sans-serif; }
+.app-shell-mode { color: #26384b; font-weight: 400; }
+.app-shell-mode h1,
+.app-shell-mode h2,
+.app-shell-mode h3 { color: #203247; font-weight: 600; letter-spacing: -.02em; }
+.app-shell-mode strong { font-weight: 600; }
+.app-shell-mode .eyebrow { font-weight: 650; letter-spacing: .085em; }
+.app-shell-mode .btn,
+.app-shell-mode .icon-btn,
+.app-shell-mode .shell-nav-item { font-weight: 550; }
+.app-shell-mode .user-identity strong { font-weight: 600; }
+.app-shell-mode .user-identity small { font-weight: 400; }
+
+.app-shell-mode .teacher-page-head h2 { font-weight: 600; }
+.app-shell-mode .teacher-section-title h3 { font-weight: 600; }
+.app-shell-mode .course-card h3,
+.app-shell-mode .course-card-head h3 { font-size: 18px; font-weight: 600; }
+.app-shell-mode .course-card,
+.app-shell-mode .overview-panel,
+.app-shell-mode .stat-card { box-shadow: 0 8px 24px #1f31450b; }
+.app-shell-mode .course-card:hover { transform: translateY(-2px); box-shadow: 0 13px 30px #1f314512; }
+.app-shell-mode .compact-course { padding: 21px; }
+.app-shell-mode .compact-course > p { color: #69798b; font-size: 13.5px; }
+.app-shell-mode .compact-course .course-meta { color: #7b8999; font-size: 11.5px; }
+.app-shell-mode .compact-course .card-actions { border-top: 0; }
+.app-shell-mode .compact-course .compact-actions .btn,
+.app-shell-mode .compact-course .compact-actions .icon-btn { font-weight: 550; }
+
+.app-shell-mode .student-result-group { border-radius: 18px; background: #fff; box-shadow: 0 10px 30px #1f31450c; }
+.app-shell-mode .student-result-group summary { padding: 20px 21px; }
+.app-shell-mode .student-result-avatar { color: #24708a; background: #e8f4f7; font-weight: 600; }
+.app-shell-mode .student-result-name strong { color: #26384b; font-size: 14px; font-weight: 600; }
+.app-shell-mode .student-result-name small,
+.app-shell-mode .student-best-score small { color: #778698; font-weight: 400; }
+.app-shell-mode .student-best-score strong { color: #0f7891; font-weight: 650; }
+.app-shell-mode .student-grade-list { padding: 5px 20px 15px; border-top: 0; background: #fbfcfe; }
+.app-shell-mode .student-grade-row { grid-template-columns: minmax(180px,1.35fr) 94px 72px minmax(165px,1fr) auto; gap: 16px; padding: 20px 0; border-color: #e9edf2; }
+.app-shell-mode .student-grade-row small { color: #788799; font-size: 9px; font-weight: 500; letter-spacing: .055em; }
+.app-shell-mode .student-grade-row strong { color: #2c3d50; font-size: 13.5px; font-weight: 550; line-height: 1.4; }
+.app-shell-mode .student-grade-row .grade { color: #0f7891; font-size: 16px; font-weight: 650; }
+.app-shell-mode .student-grade-row span { color: #7a8898; font-size: 11.5px; }
+.app-shell-mode .student-grade-row .grade-action { padding-left: 6px; border-left: 0; }
+.app-shell-mode .delete-result { min-width: 72px; color: #c64450; background: #fff1f2; }
+
+@media (max-width:1050px) {
+  .app-shell-mode .student-grade-row { grid-template-columns: minmax(180px,1.3fr) 90px 70px minmax(150px,1fr); }
+  .app-shell-mode .student-grade-row .grade-action { grid-column: 1 / -1; align-items: flex-end; }
+}
+@media (max-width:620px) {
+  .app-shell-mode .student-result-group summary { padding: 17px; }
+  .app-shell-mode .student-grade-list { padding: 3px 16px 12px; }
+  .app-shell-mode .student-grade-row { grid-template-columns: 1fr 1fr; gap: 14px; padding: 18px 0; }
+  .app-shell-mode .student-grade-row .grade-exam,
+  .app-shell-mode .student-grade-row .grade-delivery,
+  .app-shell-mode .student-grade-row .grade-action { grid-column: 1 / -1; }
+  .app-shell-mode .student-grade-row .grade-action { align-items: stretch; padding-top: 4px; }
+}
