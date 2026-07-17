@@ -763,7 +763,7 @@ function playAuthLoginExit() {
       resolve();
     };
     const onTransitionEnd = event => {
-      if (event.propertyName === "left" && event.target.classList.contains("auth-card")) finish();
+      if (event.propertyName === "transform" && event.target.classList.contains("auth-card")) finish();
     };
     layout.addEventListener("transitionend", onTransitionEnd);
     window.setTimeout(finish, 860);
