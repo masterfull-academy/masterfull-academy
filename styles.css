@@ -2632,3 +2632,24 @@ body:not(.app-shell-mode) .topbar .sound-btn { min-width: 0; }
   .teacher-command-hero > aside > div { border-right:0; border-bottom:1px solid #ffffff17; }
   .teacher-command-hero > aside > div:last-child { border-bottom:0; }
 }
+
+/* Administración directa y reordenamiento de contenido */
+.drag-help { margin:-4px 0 14px; padding:10px 13px; color:#64748b; border:1px dashed #cbd5e1; border-radius:10px; background:#f8fafc; font-size:10.5px; }
+.teacher-module-card > header { grid-template-columns:24px 40px minmax(0,1fr) auto; }
+.teacher-activity-row { grid-template-columns:22px 38px minmax(0,1fr) auto; }
+.drag-handle { display:grid; place-items:center; color:#94a3b8; border-radius:7px; cursor:grab; user-select:none; touch-action:none; }
+.drag-handle:hover,.drag-handle:focus-visible { color:#2563eb; outline:2px solid #bfdbfe; background:#eff6ff; }
+.drag-handle:active { cursor:grabbing; }
+.module-drag-handle { min-height:34px; font-size:17px; letter-spacing:-3px; }
+.activity-drag-handle { min-height:32px; font-size:18px; }
+.teacher-module-card.is-dragging,.teacher-activity-row.is-dragging { opacity:.45; }
+.teacher-module-card.is-drag-over { border-color:#2563eb; box-shadow:0 0 0 3px #2563eb18; }
+.teacher-activity-row.is-drag-over { border-top:3px solid #22d3ee; background:#ecfeff; }
+.compact-course .manage-course-content { color:#fff; background:#2563eb; box-shadow:none; }
+.compact-course .manage-course-content:hover { background:#1d4ed8; }
+@media (max-width:800px) {
+  .teacher-module-card > header { grid-template-columns:22px 36px minmax(0,1fr); }
+  .teacher-module-card > header .module-actions { grid-column:2 / -1; }
+  .teacher-activity-row { grid-template-columns:20px 34px minmax(0,1fr); }
+  .teacher-activity-row .activity-actions { grid-column:2 / -1; }
+}

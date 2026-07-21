@@ -38,6 +38,7 @@ let minuteWarningPlayed = false;
 let appReady = false;
 let activeTeacherCourseId = null;
 let activeTeacherCourseSection = "overview";
+let activeTeacherWorkspaceOrigin = "exams";
 let activeLessonCourseId = null;
 let activeLessonActivityId = null;
 let activeLessonTab = "description";
@@ -723,12 +724,12 @@ function renderTeacherCourses() {
     const count = publishedExams.filter(exam => exam.courseId === course.id).length;
     if (!matches(course, "published")) return "";
     const updated = courseChanges.find(change => change.course_id === course.id)?.updated_at;
-    return `<article class="course-card compact-course"><div class="course-card-head"><div class="course-icon">${modernIcon("course")}</div><div><h3>${esc(course.name)}</h3><span class="status published">Publicado ✓</span></div></div><p>${esc(course.description || "Sin descripción registrada")}</p><div class="course-meta"><span>${quantity(count, "examen", "exámenes")}</span>${updated ? `<span>Actualizado: ${shortDate(updated)}</span>` : ""}</div><div class="card-actions compact-actions"><button class="btn secondary create-exam-course" data-id="${esc(course.id)}" type="button">Crear examen</button><button class="icon-btn edit-published-course" data-id="${esc(course.id)}" type="button">Editar</button><button class="icon-btn delete delete-published-course" data-id="${esc(course.id)}" type="button">Eliminar</button></div></article>`;
+    return `<article class="course-card compact-course"><div class="course-card-head"><div class="course-icon">${modernIcon("course")}</div><div><h3>${esc(course.name)}</h3><span class="status published">Publicado ✓</span></div></div><p>${esc(course.description || "Sin descripción registrada")}</p><div class="course-meta"><span>${quantity(normalizeModules(course.modules).length, "módulo", "módulos")}</span><span>${quantity(count, "examen", "exámenes")}</span>${updated ? `<span>Actualizado: ${shortDate(updated)}</span>` : ""}</div><div class="card-actions compact-actions"><button class="btn primary manage-course-content" data-course-id="${esc(course.id)}" type="button">Administrar contenido</button><button class="btn secondary create-exam-course" data-id="${esc(course.id)}" type="button">Crear examen</button><button class="icon-btn edit-published-course" data-id="${esc(course.id)}" type="button">Editar</button><button class="icon-btn delete delete-published-course" data-id="${esc(course.id)}" type="button">Eliminar</button></div></article>`;
   }).filter(Boolean);
   const local = drafts.courses.map(course => {
     const count = drafts.exams.filter(exam => exam.courseId === course.id).length;
     if (!matches(course, "draft")) return "";
-    return `<article class="course-card draft-card compact-course"><div class="course-card-head"><div class="course-icon">${modernIcon("course")}</div><div><h3>${esc(course.name)}</h3><span class="status draft">Borrador local</span></div></div><p>${esc(course.description || "Sin descripción registrada")}</p><div class="course-meta"><span>${count ? quantity(count, "examen", "exámenes") : "Sin exámenes"}</span>${course.updatedAt ? `<span>Actualizado: ${shortDate(course.updatedAt)}</span>` : ""}</div><div class="card-actions compact-actions"><button class="btn primary publish-course" data-id="${esc(course.id)}">Publicar curso</button><button class="btn secondary create-exam-course" data-id="${esc(course.id)}">Crear examen</button><button class="icon-btn edit-course" data-id="${esc(course.id)}">Editar</button><button class="icon-btn delete delete-course" data-id="${esc(course.id)}">Eliminar</button></div></article>`;
+    return `<article class="course-card draft-card compact-course"><div class="course-card-head"><div class="course-icon">${modernIcon("course")}</div><div><h3>${esc(course.name)}</h3><span class="status draft">Borrador local</span></div></div><p>${esc(course.description || "Sin descripción registrada")}</p><div class="course-meta"><span>${quantity(normalizeModules(course.modules).length, "módulo", "módulos")}</span><span>${count ? quantity(count, "examen", "exámenes") : "Sin exámenes"}</span>${course.updatedAt ? `<span>Actualizado: ${shortDate(course.updatedAt)}</span>` : ""}</div><div class="card-actions compact-actions"><button class="btn primary manage-course-content" data-course-id="${esc(course.id)}" type="button">Administrar contenido</button><button class="btn secondary publish-course" data-id="${esc(course.id)}">Publicar</button><button class="btn secondary create-exam-course" data-id="${esc(course.id)}">Crear examen</button><button class="icon-btn edit-course" data-id="${esc(course.id)}">Editar</button><button class="icon-btn delete delete-course" data-id="${esc(course.id)}">Eliminar</button></div></article>`;
   }).filter(Boolean);
   return published.concat(local).join("") || emptyCard("No se encontraron cursos.");
 }
@@ -781,7 +782,7 @@ function renderTeacherCourseWorkspace(course, exams) {
   else if (activeTeacherCourseSection === "questions") content = renderTeacherCourseQuestions(exams);
   else content = renderTeacherCourseOverview(course, exams, publishedCount, questionCount);
   return `<div class="course-workspace-page">
-    <button class="course-workspace-back" id="back-to-exam-courses" type="button">← Todos los cursos</button>
+    <button class="course-workspace-back" id="back-to-exam-courses" type="button">← ${activeTeacherWorkspaceOrigin === "courses" ? "Mis cursos" : "Todos los cursos"}</button>
     <header class="course-workspace-hero">
       <span class="course-workspace-icon">${modernIcon("course")}</span>
       <div><span class="eyebrow">ESPACIO DEL CURSO</span><h3>${esc(course.name)}</h3><p>${esc(course.description || "Sin descripción registrada")}</p></div>
@@ -801,10 +802,10 @@ function unlockRuleLabel(module, index) {
 }
 function renderTeacherCourseModules(course) {
   const modules = normalizeModules(course.modules);
-  return `<div class="course-subpage-head"><div><span class="eyebrow">MÓDULOS Y ACTIVIDADES</span><h4>Estructura del curso</h4><p>Organiza lecciones, videos, archivos, tareas, evaluaciones y enlaces en orden vertical.</p></div><button class="btn primary add-course-module" data-course-id="${esc(course.id)}" type="button">+ Crear módulo</button></div>
-    <div class="teacher-module-list">${modules.length ? modules.map((module, index) => `<article class="teacher-module-card">
-      <header><span class="module-order">${index + 1}</span><div><h4>${esc(module.title)}</h4><small>${unlockRuleLabel(module, index)} · ${quantity(module.activities.length, "actividad", "actividades")}</small></div><div class="module-actions"><button class="icon-btn move-module" data-direction="up" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" ${index === 0 ? "disabled" : ""} aria-label="Subir módulo">↑</button><button class="icon-btn move-module" data-direction="down" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" ${index === modules.length - 1 ? "disabled" : ""} aria-label="Bajar módulo">↓</button><button class="icon-btn edit-module" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}">Editar</button><button class="icon-btn delete delete-module" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}">Eliminar</button></div></header>
-      <div class="teacher-activity-list">${module.activities.length ? module.activities.map((activity, activityIndex) => `<div class="teacher-activity-row"><span class="activity-type-icon">${modernIcon(activity.type)}</span><div><strong>${esc(activity.title)}</strong><small>${activityTypeLabel(activity.type)}${activity.url ? ` · ${esc(activity.url)}` : ""}</small></div><div class="activity-actions"><button class="icon-btn move-activity" data-direction="up" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}" ${activityIndex === 0 ? "disabled" : ""} aria-label="Subir actividad">↑</button><button class="icon-btn move-activity" data-direction="down" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}" ${activityIndex === module.activities.length - 1 ? "disabled" : ""} aria-label="Bajar actividad">↓</button><button class="icon-btn edit-activity" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}">Editar</button><button class="icon-btn delete delete-activity" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}">Eliminar</button></div></div>`).join("") : `<p class="module-empty">Este módulo aún no tiene actividades.</p>`}</div>
+  return `<div class="course-subpage-head"><div><span class="eyebrow">MÓDULOS Y ACTIVIDADES</span><h4>Estructura del curso</h4><p>Organiza lecciones, videos, archivos, tareas, evaluaciones y enlaces en orden vertical.</p></div><button class="btn primary add-course-module" data-course-id="${esc(course.id)}" type="button">+ Crear módulo</button></div><p class="drag-help">Arrastra los controles ⋮⋮ para cambiar el orden. También puedes usar las flechas.</p>
+    <div class="teacher-module-list">${modules.length ? modules.map((module, index) => `<article class="teacher-module-card" data-course-id="${esc(course.id)}" data-module-drop="${esc(module.id)}">
+      <header><span class="drag-handle module-drag-handle" draggable="true" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" role="button" tabindex="0" aria-label="Arrastrar módulo ${esc(module.title)}">⋮⋮</span><span class="module-order">${index + 1}</span><div><h4>${esc(module.title)}</h4><small>${unlockRuleLabel(module, index)} · ${quantity(module.activities.length, "actividad", "actividades")}</small></div><div class="module-actions"><button class="icon-btn move-module" data-direction="up" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" ${index === 0 ? "disabled" : ""} aria-label="Subir módulo">↑</button><button class="icon-btn move-module" data-direction="down" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" ${index === modules.length - 1 ? "disabled" : ""} aria-label="Bajar módulo">↓</button><button class="icon-btn edit-module" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}">Editar</button><button class="icon-btn delete delete-module" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}">Eliminar</button></div></header>
+      <div class="teacher-activity-list">${module.activities.length ? module.activities.map((activity, activityIndex) => `<div class="teacher-activity-row" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-drop="${esc(activity.id)}"><span class="drag-handle activity-drag-handle" draggable="true" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}" role="button" tabindex="0" aria-label="Arrastrar actividad ${esc(activity.title)}">⋮</span><span class="activity-type-icon">${modernIcon(activity.type)}</span><div><strong>${esc(activity.title)}</strong><small>${activityTypeLabel(activity.type)}${activity.description ? ` · ${esc(activity.description)}` : activity.url ? ` · ${esc(activity.url)}` : ""}</small></div><div class="activity-actions"><button class="icon-btn move-activity" data-direction="up" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}" ${activityIndex === 0 ? "disabled" : ""} aria-label="Subir actividad">↑</button><button class="icon-btn move-activity" data-direction="down" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}" ${activityIndex === module.activities.length - 1 ? "disabled" : ""} aria-label="Bajar actividad">↓</button><button class="icon-btn edit-activity" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}">Editar</button><button class="icon-btn delete delete-activity" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" data-activity-id="${esc(activity.id)}">Eliminar</button></div></div>`).join("") : `<p class="module-empty">Este módulo aún no tiene actividades.</p>`}</div>
       <button class="btn secondary add-module-activity" data-course-id="${esc(course.id)}" data-module-id="${esc(module.id)}" type="button">+ Agregar actividad</button>
     </article>`).join("") : `<div class="course-workspace-empty"><strong>Aún no hay módulos</strong><p>Crea el primero para comenzar a organizar el contenido del curso.</p></div>`}</div>`;
 }
@@ -853,6 +854,15 @@ function bindTeacherActions() {
   $$(".export-draft").filter(button => !button.closest("#teacher-course-workspace")).forEach(button => button.addEventListener("click", () => { openExamModal(button.dataset.id); setTimeout(exportCurrentExam, 50); }));
   $$(".export-course").forEach(button => button.addEventListener("click", () => exportCourseDraft(button.dataset.id)));
   $$(".publish-course").forEach(button => button.addEventListener("click", () => openPublishCourseModal(button.dataset.id)));
+  $$(".manage-course-content").forEach(button => button.addEventListener("click", () => openTeacherCourseWorkspace(button.dataset.courseId, "modules", "courses")));
+}
+function openTeacherCourseWorkspace(courseId, section = "overview", origin = "exams") {
+  activeTeacherCourseId = courseId;
+  activeTeacherCourseSection = section;
+  activeTeacherWorkspaceOrigin = origin;
+  switchTab("teacher", "teacher-exams", $('[data-teacher-tab="teacher-exams"]'));
+  renderTeacherExamWorkspace(getTeacherCourses(), getTeacherExams());
+  bindTeacherExamWorkspaceActions();
 }
 function exportCourseDraft(id) {
   const course = drafts.courses.find(item => item.id === id);
@@ -877,14 +887,17 @@ function openPublishCourseModal(id) {
 }
 function bindTeacherExamWorkspaceActions() {
   $$(".open-course-workspace").forEach(button => button.addEventListener("click", () => {
-    activeTeacherCourseId = button.dataset.courseId;
-    activeTeacherCourseSection = "overview";
-    renderTeacherExamWorkspace(getTeacherCourses(), getTeacherExams());
-    bindTeacherExamWorkspaceActions();
+    openTeacherCourseWorkspace(button.dataset.courseId, "overview", "exams");
   }));
   $("#back-to-exam-courses")?.addEventListener("click", () => {
     activeTeacherCourseId = null;
     activeTeacherCourseSection = "overview";
+    if (activeTeacherWorkspaceOrigin === "courses") {
+      activeTeacherWorkspaceOrigin = "exams";
+      switchTab("teacher", "teacher-courses", $('[data-teacher-tab="teacher-courses"]'));
+      renderTeacherCourseList();
+      return;
+    }
     renderTeacherExamWorkspace(getTeacherCourses(), getTeacherExams());
     bindTeacherExamWorkspaceActions();
   });
@@ -905,6 +918,7 @@ function bindTeacherExamWorkspaceActions() {
   $$("#teacher-course-workspace .delete-activity").forEach(button => button.addEventListener("click", () => deleteActivity(button.dataset.courseId, button.dataset.moduleId, button.dataset.activityId)));
   $$("#teacher-course-workspace .move-module").forEach(button => button.addEventListener("click", () => moveModule(button.dataset.courseId, button.dataset.moduleId, button.dataset.direction)));
   $$("#teacher-course-workspace .move-activity").forEach(button => button.addEventListener("click", () => moveActivity(button.dataset.courseId, button.dataset.moduleId, button.dataset.activityId, button.dataset.direction)));
+  bindModuleDragAndDrop();
 }
 async function publishSelectedCourseExams(event) {
   event.preventDefault();
@@ -1590,6 +1604,78 @@ async function moveModule(courseId, moduleId, direction) {
 }
 async function moveActivity(courseId, moduleId, activityId, direction) {
   await updateCourseModules(courseId, modules => modules.map(module => { if (module.id !== moduleId) return module; const activities = [...module.activities]; const index = activities.findIndex(activity => activity.id === activityId); const target = index + (direction === "up" ? -1 : 1); if (index >= 0 && target >= 0 && target < activities.length) [activities[index], activities[target]] = [activities[target], activities[index]]; return { ...module, activities }; }));
+}
+function bindModuleDragAndDrop() {
+  $$(".module-drag-handle").forEach(handle => {
+    handle.addEventListener("dragstart", event => {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", JSON.stringify({ kind:"module", courseId:handle.dataset.courseId, moduleId:handle.dataset.moduleId }));
+      handle.closest(".teacher-module-card")?.classList.add("is-dragging");
+    });
+    handle.addEventListener("dragend", clearDragStyles);
+  });
+  $$(".activity-drag-handle").forEach(handle => {
+    handle.addEventListener("dragstart", event => {
+      event.stopPropagation();
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", JSON.stringify({ kind:"activity", courseId:handle.dataset.courseId, moduleId:handle.dataset.moduleId, activityId:handle.dataset.activityId }));
+      handle.closest(".teacher-activity-row")?.classList.add("is-dragging");
+    });
+    handle.addEventListener("dragend", clearDragStyles);
+  });
+  $$("[data-activity-drop]").forEach(row => {
+    row.addEventListener("dragover", event => { event.preventDefault(); event.stopPropagation(); row.classList.add("is-drag-over"); });
+    row.addEventListener("dragleave", () => row.classList.remove("is-drag-over"));
+    row.addEventListener("drop", event => {
+      event.preventDefault(); event.stopPropagation();
+      const payload = readDragPayload(event);
+      clearDragStyles();
+      if (payload?.kind === "activity" && payload.courseId === row.dataset.courseId) reorderActivityDrop(payload.courseId, payload.moduleId, payload.activityId, row.dataset.moduleId, row.dataset.activityDrop);
+    });
+  });
+  $$("[data-module-drop]").forEach(card => {
+    card.addEventListener("dragover", event => { event.preventDefault(); card.classList.add("is-drag-over"); });
+    card.addEventListener("dragleave", event => { if (!card.contains(event.relatedTarget)) card.classList.remove("is-drag-over"); });
+    card.addEventListener("drop", event => {
+      event.preventDefault();
+      const payload = readDragPayload(event);
+      clearDragStyles();
+      if (!payload || payload.courseId !== card.dataset.courseId) return;
+      if (payload.kind === "module") reorderModuleDrop(payload.courseId, payload.moduleId, card.dataset.moduleDrop);
+      if (payload.kind === "activity") reorderActivityDrop(payload.courseId, payload.moduleId, payload.activityId, card.dataset.moduleDrop);
+    });
+  });
+}
+function readDragPayload(event) {
+  try { return JSON.parse(event.dataTransfer.getData("text/plain")); }
+  catch { return null; }
+}
+function clearDragStyles() {
+  $$(".is-dragging,.is-drag-over").forEach(element => element.classList.remove("is-dragging","is-drag-over"));
+}
+async function reorderModuleDrop(courseId, sourceModuleId, targetModuleId) {
+  if (sourceModuleId === targetModuleId) return;
+  await updateCourseModules(courseId, modules => {
+    const sourceIndex = modules.findIndex(module => module.id === sourceModuleId);
+    const targetIndex = modules.findIndex(module => module.id === targetModuleId);
+    if (sourceIndex < 0 || targetIndex < 0) return modules;
+    const [moved] = modules.splice(sourceIndex, 1);
+    modules.splice(modules.findIndex(module => module.id === targetModuleId), 0, moved);
+    return modules;
+  });
+}
+async function reorderActivityDrop(courseId, sourceModuleId, activityId, targetModuleId, targetActivityId = "") {
+  if (sourceModuleId === targetModuleId && activityId === targetActivityId) return;
+  await updateCourseModules(courseId, modules => {
+    const sourceModule = modules.find(module => module.id === sourceModuleId);
+    const targetModule = modules.find(module => module.id === targetModuleId);
+    const sourceIndex = sourceModule?.activities.findIndex(activity => activity.id === activityId) ?? -1;
+    if (!sourceModule || !targetModule || sourceIndex < 0) return modules;
+    const [moved] = sourceModule.activities.splice(sourceIndex, 1);
+    const targetIndex = targetActivityId ? targetModule.activities.findIndex(activity => activity.id === targetActivityId) : -1;
+    targetModule.activities.splice(targetIndex < 0 ? targetModule.activities.length : targetIndex, 0, moved);
+    return modules;
+  });
 }
 function switchTab(prefix, id, button) {
   $$(`[data-${prefix}-tab]`).forEach(tab => tab.classList.toggle("active", tab === button));
