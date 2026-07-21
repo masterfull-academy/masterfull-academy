@@ -38,6 +38,9 @@ let minuteWarningPlayed = false;
 let appReady = false;
 let activeTeacherCourseId = null;
 let activeTeacherCourseSection = "overview";
+let activeLessonCourseId = null;
+let activeLessonActivityId = null;
+let activeLessonTab = "description";
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -62,7 +65,8 @@ function normalizeModules(value) {
       id: String(activity.id || `activity-${moduleIndex + 1}-${activityIndex + 1}`),
       title: String(activity.title || activity.name || `Actividad ${activityIndex + 1}`).trim(),
       type: ["lesson","video","pdf","download","task","quiz","link"].includes(activity.type) ? activity.type : "lesson",
-      url: String(activity.url || "").trim()
+      url: String(activity.url || "").trim(),
+      description: String(activity.description || "").trim()
     }))
   }));
 }
@@ -102,6 +106,7 @@ function slug(value) {
 function show(id) {
   $$(".view").forEach(view => view.classList.toggle("active", view.id === id));
   document.body.classList.toggle("app-shell-mode", ["teacher-view","student-view"].includes(id));
+  document.body.classList.toggle("lesson-mode", id === "lesson-view");
   document.body.classList.toggle("exam-in-progress", id === "exam-view");
   document.body.classList.remove("student-game-mode");
   document.body.classList.toggle("result-game-mode", id === "result-view");
@@ -478,6 +483,13 @@ function bindStaticEvents() {
   $("#module-form").addEventListener("submit", saveModule);
   $("#activity-form").addEventListener("submit", saveActivity);
   $("#module-unlock-rule").addEventListener("change", toggleModuleUnlockDetail);
+  $("#lesson-return").addEventListener("click", () => { activeLessonCourseId = null; activeLessonActivityId = null; renderStudent(); });
+  $("#lesson-menu-toggle").addEventListener("click", toggleLessonSidebar);
+  $("#lesson-sidebar-close").addEventListener("click", closeLessonSidebar);
+  $("#lesson-complete").addEventListener("click", completeActiveLesson);
+  $("#lesson-previous").addEventListener("click", () => navigateLesson(-1));
+  $("#lesson-next").addEventListener("click", () => navigateLesson(1));
+  $$(".lesson-tab").forEach(button => button.addEventListener("click", () => { activeLessonTab = button.dataset.lessonTab; renderLessonTabs(); }));
   $("#publish-course-form").addEventListener("submit", publishSelectedCourseExams);
   $("#exam-editor-form").addEventListener("submit", saveExamDraft);
   $("#editor-option-count").addEventListener("change", changeOptionCount);
@@ -1028,8 +1040,9 @@ function renderStudent() {
   $$(".start-exam").forEach(button => button.addEventListener("click", () => startExam(button.dataset.id)));
   $$(".review-exam").forEach(button => button.addEventListener("click", () => showExamReviews(button.dataset.id)));
   $$(".review-attempt").forEach(button => button.addEventListener("click", () => showAttemptReview(button.dataset.id)));
-  $$(".student-activity-action").forEach(button => button.addEventListener("click", () => toggleActivityProgress(button.dataset.courseId, button.dataset.activityId, button.dataset.url)));
-  $$(".continue-course").forEach(button => button.addEventListener("click", () => document.getElementById(button.dataset.target)?.scrollIntoView({ behavior:"smooth", block:"center" })));
+  $$(".student-activity-action").forEach(button => button.addEventListener("click", event => { event.stopPropagation(); toggleActivityProgress(button.dataset.courseId, button.dataset.activityId); }));
+  $$(".open-lesson").forEach(button => button.addEventListener("click", () => openLesson(button.dataset.courseId, button.dataset.activityId)));
+  $$(".continue-course").forEach(button => button.addEventListener("click", () => openLesson(button.dataset.courseId, button.dataset.activityId)));
 }
 function renderStudentCourseModules(course, myGrades) {
   const modules = normalizeModules(course.modules);
@@ -1038,28 +1051,152 @@ function renderStudentCourseModules(course, myGrades) {
   const activities = modules.flatMap(module => module.activities);
   const completedCount = activities.filter(activity => progress.completed?.[activity.id]).length;
   const percent = activities.length ? Math.round(completedCount * 100 / activities.length) : 0;
-  const next = activities.find(activity => !progress.completed?.[activity.id]);
-  const target = progress.lastActivityId || next?.id || activities[0]?.id || "";
+  const accessibleActivities = accessibleCourseActivities(course);
+  const lastAccessible = accessibleActivities.find(activity => activity.id === progress.lastActivityId);
+  const next = accessibleActivities.find(activity => !progress.completed?.[activity.id]);
+  const target = lastAccessible?.id || next?.id || accessibleActivities[0]?.id || "";
   let previousComplete = true;
-  return `<section class="student-module-space"><div class="course-progress-summary"><div><span>Progreso del curso</span><strong>${percent}% completado</strong><small>${completedCount} realizadas · ${activities.length - completedCount} pendientes</small></div><div class="course-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>${target ? `<button class="btn primary continue-course" data-target="activity-${esc(target)}" type="button">Continuar curso</button>` : ""}</div>
+  return `<section class="student-module-space"><div class="course-progress-summary"><div><span>Progreso del curso</span><strong>${percent}% completado</strong><small>${completedCount} realizadas · ${activities.length - completedCount} pendientes</small></div><div class="course-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width:${percent}%"></span></div>${target ? `<button class="btn primary continue-course" data-course-id="${esc(course.id)}" data-activity-id="${esc(target)}" type="button">Continuar curso</button>` : ""}</div>
     <div class="student-module-list">${modules.map((module, index) => {
       const passedEvaluation = myGrades.some(grade => grade.courseId === course.id && Number(grade.score) >= 11);
       const dateAvailable = module.unlockRule !== "date" || (module.unlockDetail && new Date(module.unlockDetail) <= new Date());
       const locked = (module.unlockRule === "previous" && !previousComplete) || (module.unlockRule === "evaluation" && !passedEvaluation) || !dateAvailable;
       const moduleComplete = module.activities.length > 0 && module.activities.every(activity => progress.completed?.[activity.id]);
-      const markup = `<details class="student-module ${locked ? "is-locked" : ""}" ${index === 0 && !locked ? "open" : ""}><summary><span class="module-order">${index + 1}</span><span><strong>${esc(module.title)}</strong><small>${locked ? `🔒 ${unlockRuleLabel(module, index)}` : `${quantity(module.activities.length, "actividad", "actividades")} · ${moduleComplete ? "Completado" : "En progreso"}`}</small></span><b>${moduleComplete ? "✓" : locked ? "🔒" : "⌄"}</b></summary>${locked ? `<p class="module-lock-message">Este módulo está bloqueado. ${unlockRuleLabel(module, index)}.</p>` : `<div class="student-activity-list">${module.activities.length ? module.activities.map(activity => { const completed = Boolean(progress.completed?.[activity.id]); const inProgress = !completed && progress.lastActivityId === activity.id; return `<div class="student-activity" id="activity-${esc(activity.id)}"><span class="activity-type-icon">${modernIcon(activity.type)}</span><div><strong>${esc(activity.title)}</strong><small>${activityTypeLabel(activity.type)} · ${completed ? "Completado" : inProgress ? "En progreso" : "No iniciado"}</small></div><button class="student-activity-action ${completed ? "is-complete" : ""}" data-course-id="${esc(course.id)}" data-activity-id="${esc(activity.id)}" data-url="${esc(activity.url)}" type="button" aria-label="${completed ? "Marcar como pendiente" : "Marcar como completado"}">${completed ? "✓" : "○"}</button></div>`; }).join("") : `<p class="module-empty">No hay actividades publicadas.</p>`}</div>`}</details>`;
+      const markup = `<details class="student-module ${locked ? "is-locked" : ""}" ${index === 0 && !locked ? "open" : ""}><summary><span class="module-order">${index + 1}</span><span><strong>${esc(module.title)}</strong><small>${locked ? `🔒 ${unlockRuleLabel(module, index)}` : `${quantity(module.activities.length, "actividad", "actividades")} · ${moduleComplete ? "Completado" : "En progreso"}`}</small></span><b>${moduleComplete ? "✓" : locked ? "🔒" : "⌄"}</b></summary>${locked ? `<p class="module-lock-message">Este módulo está bloqueado. ${unlockRuleLabel(module, index)}.</p>` : `<div class="student-activity-list">${module.activities.length ? module.activities.map(activity => { const completed = Boolean(progress.completed?.[activity.id]); const inProgress = !completed && progress.lastActivityId === activity.id; return `<div class="student-activity" id="activity-${esc(activity.id)}"><span class="activity-type-icon">${modernIcon(activity.type)}</span><button class="open-lesson" data-course-id="${esc(course.id)}" data-activity-id="${esc(activity.id)}" type="button"><strong>${esc(activity.title)}</strong><small>${activityTypeLabel(activity.type)} · ${completed ? "Completado" : inProgress ? "En progreso" : "No iniciado"}</small></button><button class="student-activity-action ${completed ? "is-complete" : ""}" data-course-id="${esc(course.id)}" data-activity-id="${esc(activity.id)}" type="button" aria-label="${completed ? "Marcar como pendiente" : "Marcar como completado"}">${completed ? "✓" : "○"}</button></div>`; }).join("") : `<p class="module-empty">No hay actividades publicadas.</p>`}</div>`}</details>`;
       previousComplete = moduleComplete;
       return markup;
     }).join("")}</div></section>`;
 }
-function toggleActivityProgress(courseId, activityId, url = "") {
+function toggleActivityProgress(courseId, activityId) {
   const progress = courseProgress[courseId] || { completed:{}, lastActivityId:"" };
   progress.completed = { ...(progress.completed || {}), [activityId]: !progress.completed?.[activityId] };
   progress.lastActivityId = activityId;
   courseProgress[courseId] = progress;
   saveCourseProgress();
-  if (url && /^(https?:\/\/|\.\/|\/)/i.test(url)) window.open(url, "_blank", "noopener");
   renderStudent();
+}
+function accessibleCourseActivities(course) {
+  const modules = normalizeModules(course.modules);
+  const progress = courseProgress[course.id] || { completed:{} };
+  const myGrades = results.filter(grade => grade.studentId === currentUser.id);
+  const accessible = [];
+  let previousComplete = true;
+  modules.forEach((module, moduleIndex) => {
+    const passedEvaluation = myGrades.some(grade => grade.courseId === course.id && Number(grade.score) >= 11);
+    const dateAvailable = module.unlockRule !== "date" || (module.unlockDetail && new Date(module.unlockDetail) <= new Date());
+    const locked = (module.unlockRule === "previous" && moduleIndex > 0 && !previousComplete) || (module.unlockRule === "evaluation" && !passedEvaluation) || !dateAvailable;
+    if (!locked) module.activities.forEach(activity => accessible.push({ ...activity, moduleId:module.id, moduleTitle:module.title, moduleIndex }));
+    previousComplete = module.activities.length > 0 && module.activities.every(activity => progress.completed?.[activity.id]);
+  });
+  return accessible;
+}
+function openLesson(courseId, activityId) {
+  const course = publishedCourses.find(item => item.id === courseId);
+  if (!course || !accessibleCourseActivities(course).some(activity => activity.id === activityId)) return;
+  activeLessonCourseId = courseId;
+  activeLessonActivityId = activityId;
+  activeLessonTab = "description";
+  const progress = courseProgress[courseId] || { completed:{}, lastActivityId:"" };
+  progress.lastActivityId = activityId;
+  courseProgress[courseId] = progress;
+  saveCourseProgress();
+  renderLesson();
+}
+function safeActivityUrl(value) {
+  const url = String(value || "").trim();
+  return /^(https?:\/\/|\.\/|\/)/i.test(url) ? url : "";
+}
+function youtubeEmbedUrl(url) {
+  const match = String(url || "").match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/i);
+  return match ? `https://www.youtube-nocookie.com/embed/${match[1]}` : "";
+}
+function lessonMediaMarkup(activity) {
+  const url = safeActivityUrl(activity.url);
+  if (activity.type === "video") {
+    const youtube = youtubeEmbedUrl(url);
+    if (youtube) return `<div class="lesson-video-frame"><iframe src="${esc(youtube)}" title="Video: ${esc(activity.title)}" loading="lazy" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`;
+    if (url && /\.(mp4|webm|ogg)(?:\?|$)/i.test(url)) return `<video controls preload="metadata"><source src="${esc(url)}">Tu navegador no puede reproducir este video.</video>`;
+    return `<div class="lesson-media-placeholder"><span>${modernIcon("video")}</span><strong>Clase en video</strong><p>${url ? "Usa el enlace del material para abrir el recurso audiovisual." : "El profesor todavía no ha agregado el video de esta clase."}</p></div>`;
+  }
+  if (activity.type === "pdf" && url) return `<div class="lesson-document-preview"><span>${modernIcon("pdf")}</span><div><strong>Documento de la clase</strong><p>Consulta el PDF en una pestaña nueva o descárgalo para estudiar sin conexión.</p></div><a class="btn primary" href="${esc(url)}" target="_blank" rel="noopener">Abrir PDF</a></div>`;
+  return `<div class="lesson-media-placeholder compact"><span>${modernIcon(activity.type)}</span><strong>${activityTypeLabel(activity.type)}</strong><p>Revisa la explicación, los materiales y los recursos asociados a esta actividad.</p></div>`;
+}
+function renderLesson() {
+  const course = publishedCourses.find(item => item.id === activeLessonCourseId);
+  const activities = course ? accessibleCourseActivities(course) : [];
+  const activityIndex = activities.findIndex(activity => activity.id === activeLessonActivityId);
+  if (!course || activityIndex < 0) { renderStudent(); return; }
+  const activity = activities[activityIndex];
+  const progress = courseProgress[course.id] || { completed:{}, lastActivityId:"" };
+  const allActivities = normalizeModules(course.modules).flatMap(module => module.activities);
+  const completedCount = allActivities.filter(item => progress.completed?.[item.id]).length;
+  const percent = allActivities.length ? Math.round(completedCount * 100 / allActivities.length) : 0;
+  $("#lesson-sidebar-course").textContent = course.name;
+  $("#lesson-title").textContent = activity.title;
+  $("#lesson-type").textContent = `${activity.moduleTitle} · ${activityTypeLabel(activity.type)}`;
+  $("#lesson-description").textContent = activity.description || "Avanza a tu ritmo y marca esta actividad como completada cuando termines.";
+  $("#lesson-media").innerHTML = lessonMediaMarkup(activity);
+  $("#lesson-progress-label").textContent = `${percent}% completado`;
+  $("#lesson-progress-bar").style.width = `${percent}%`;
+  const completed = Boolean(progress.completed?.[activity.id]);
+  $("#lesson-complete").textContent = completed ? "✓ Actividad completada" : "Marcar como completado";
+  $("#lesson-complete").classList.toggle("completed-button", completed);
+  $("#lesson-previous").disabled = activityIndex === 0;
+  $("#lesson-next").disabled = activityIndex === activities.length - 1;
+  $("#lesson-position").textContent = `${activityIndex + 1} de ${activities.length}`;
+  const url = safeActivityUrl(activity.url);
+  $("#lesson-materials-card").innerHTML = url ? `<div><span class="activity-type-icon">${modernIcon(activity.type === "video" ? "download" : activity.type)}</span><span><strong>Material de la actividad</strong><small>${activityTypeLabel(activity.type)} disponible</small></span></div><a class="btn secondary" href="${esc(url)}" target="_blank" rel="noopener">Abrir recurso ↗</a>` : `<div><span class="activity-type-icon">${modernIcon("download")}</span><span><strong>Materiales descargables</strong><small>No hay archivos adicionales para esta clase.</small></span></div>`;
+  renderLessonTree(course, activity.id);
+  renderLessonTabs();
+  show("lesson-view");
+  closeLessonSidebar();
+}
+function renderLessonTree(course, activeActivityId) {
+  const accessibleIds = new Set(accessibleCourseActivities(course).map(activity => activity.id));
+  const progress = courseProgress[course.id] || { completed:{} };
+  $("#lesson-module-tree").innerHTML = normalizeModules(course.modules).map((module, index) => {
+    const moduleAccessible = module.activities.some(activity => accessibleIds.has(activity.id)) || !module.activities.length;
+    return `<details class="lesson-tree-module ${moduleAccessible ? "" : "is-locked"}" ${module.activities.some(activity => activity.id === activeActivityId) ? "open" : ""}><summary><span>${index + 1}</span><strong>${esc(module.title)}</strong><b>${moduleAccessible ? "⌄" : "🔒"}</b></summary><div>${moduleAccessible ? module.activities.map(activity => `<button class="lesson-tree-activity ${activity.id === activeActivityId ? "active" : ""}" data-activity-id="${esc(activity.id)}" type="button" ${accessibleIds.has(activity.id) ? "" : "disabled"}><span>${modernIcon(activity.type)}</span><span><strong>${esc(activity.title)}</strong><small>${progress.completed?.[activity.id] ? "Completado" : activity.id === activeActivityId ? "En progreso" : "No iniciado"}</small></span><b>${progress.completed?.[activity.id] ? "✓" : ""}</b></button>`).join("") : `<p>Completa el requisito anterior para desbloquearlo.</p>`}</div></details>`;
+  }).join("");
+  $$(".lesson-tree-activity:not(:disabled)").forEach(button => button.addEventListener("click", () => openLesson(course.id, button.dataset.activityId)));
+}
+function renderLessonTabs() {
+  const course = publishedCourses.find(item => item.id === activeLessonCourseId);
+  const activity = course ? accessibleCourseActivities(course).find(item => item.id === activeLessonActivityId) : null;
+  if (!activity) return;
+  $$(".lesson-tab").forEach(button => button.classList.toggle("active", button.dataset.lessonTab === activeLessonTab));
+  const url = safeActivityUrl(activity.url);
+  const contents = {
+    description: `<h3>Descripción de la clase</h3><p>${esc(activity.description || "Esta actividad forma parte de tu ruta de aprendizaje. Revisa el contenido principal y completa los materiales indicados antes de continuar.")}</p><div class="lesson-objective"><strong>Objetivo</strong><span>Comprender y aplicar los conceptos presentados en ${esc(activity.title)}.</span></div>`,
+    materials: `<h3>Materiales</h3>${url ? `<a class="lesson-resource-row" href="${esc(url)}" target="_blank" rel="noopener"><span>${modernIcon(activity.type)}</span><span><strong>${esc(activity.title)}</strong><small>Abrir material asociado</small></span><b>↗</b></a>` : `<p class="muted">Esta clase no tiene materiales adicionales.</p>`}`,
+    evaluation: `<h3>Evaluación</h3><p>${activity.type === "quiz" ? "Completa la evaluación indicada por tu profesor desde la sección de evaluaciones del curso." : "No hay una evaluación vinculada directamente a esta clase."}</p>`,
+    comments: `<h3>Comentarios</h3><p class="muted">El espacio de comentarios estará disponible en una próxima etapa.</p>`,
+    resources: `<h3>Recursos descargables</h3>${url && ["pdf","download"].includes(activity.type) ? `<a class="btn secondary" href="${esc(url)}" target="_blank" rel="noopener">Descargar o abrir recurso</a>` : `<p class="muted">No se han agregado recursos descargables.</p>`}`
+  };
+  $("#lesson-tab-content").innerHTML = contents[activeLessonTab] || contents.description;
+}
+function completeActiveLesson() {
+  const progress = courseProgress[activeLessonCourseId] || { completed:{}, lastActivityId:"" };
+  progress.completed = { ...(progress.completed || {}), [activeLessonActivityId]: !progress.completed?.[activeLessonActivityId] };
+  progress.lastActivityId = activeLessonActivityId;
+  courseProgress[activeLessonCourseId] = progress;
+  saveCourseProgress();
+  renderLesson();
+}
+function navigateLesson(direction) {
+  const course = publishedCourses.find(item => item.id === activeLessonCourseId);
+  const activities = course ? accessibleCourseActivities(course) : [];
+  const index = activities.findIndex(activity => activity.id === activeLessonActivityId);
+  const target = activities[index + direction];
+  if (target) openLesson(course.id, target.id);
+}
+function toggleLessonSidebar() {
+  const open = document.body.classList.toggle("lesson-sidebar-open");
+  $("#lesson-menu-toggle").setAttribute("aria-expanded", String(open));
+}
+function closeLessonSidebar() {
+  document.body.classList.remove("lesson-sidebar-open");
+  $("#lesson-menu-toggle").setAttribute("aria-expanded", "false");
 }
 function renderStudentExamRow(exam, myGrades) {
   const attempts = myGrades.filter(item => item.examId === exam.id);
@@ -1394,6 +1531,7 @@ function openActivityModal(courseId, moduleId, activityId = "") {
   $("#activity-title").value = activity?.title || "";
   $("#activity-type").value = activity?.type || "lesson";
   $("#activity-url").value = activity?.url || "";
+  $("#activity-description").value = activity?.description || "";
   $("#activity-error").textContent = "";
   $("#activity-modal").classList.remove("hidden");
   $("#activity-title").focus();
@@ -1403,7 +1541,7 @@ async function saveActivity(event) {
   const courseId = $("#activity-course-id").value;
   const moduleId = $("#activity-module-id").value;
   const activityId = $("#activity-id").value;
-  const activity = { id: activityId || uid(), title: $("#activity-title").value.trim(), type: $("#activity-type").value, url: $("#activity-url").value.trim() };
+  const activity = { id: activityId || uid(), title: $("#activity-title").value.trim(), type: $("#activity-type").value, url: $("#activity-url").value.trim(), description: $("#activity-description").value.trim() };
   if (!activity.title) { $("#activity-error").textContent = "Escribe un nombre para la actividad."; return; }
   const saved = await updateCourseModules(courseId, modules => modules.map(module => module.id === moduleId ? { ...module, activities: activityId ? module.activities.map(item => item.id === activityId ? activity : item) : [...module.activities, activity] } : module));
   if (saved) closeModal("activity-modal");

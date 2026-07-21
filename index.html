@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Plataforma de cursos y exámenes para profesores y alumnos.">
   <title>Masterfull Academy | Cursos y exámenes</title>
-  <link rel="stylesheet" href="styles.css?v=20260716-24">
+  <link rel="stylesheet" href="styles.css?v=20260721-2">
 </head>
 <body class="session-loading">
   <header class="topbar">
@@ -125,6 +125,28 @@
       </div>
     </section>
 
+    <section id="lesson-view" class="view">
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" id="lesson-sidebar" aria-label="Contenido del curso">
+          <div class="lesson-sidebar-head"><div><span class="eyebrow">CONTENIDO DEL CURSO</span><strong id="lesson-sidebar-course"></strong></div><button id="lesson-sidebar-close" class="icon-btn" type="button" aria-label="Cerrar contenido">×</button></div>
+          <div id="lesson-module-tree" class="lesson-module-tree"></div>
+        </aside>
+        <div class="lesson-main">
+          <header class="lesson-topbar"><button id="lesson-menu-toggle" class="btn secondary" type="button" aria-expanded="false">☰ Contenido</button><button id="lesson-return" class="lesson-return" type="button">← Volver al curso</button><div class="lesson-progress-compact"><span id="lesson-progress-label">0% completado</span><div class="course-progress-track"><span id="lesson-progress-bar"></span></div></div></header>
+          <article class="lesson-content">
+            <div id="lesson-media" class="lesson-media"></div>
+            <div class="lesson-title-row"><div><span id="lesson-type" class="eyebrow"></span><h1 id="lesson-title"></h1><p id="lesson-description" class="muted"></p></div><button id="lesson-complete" class="btn primary" type="button">Marcar como completado</button></div>
+            <div id="lesson-materials-card" class="lesson-materials-card"></div>
+            <nav class="lesson-tabs" aria-label="Información de la clase">
+              <button class="lesson-tab active" data-lesson-tab="description" type="button">Descripción</button><button class="lesson-tab" data-lesson-tab="materials" type="button">Materiales</button><button class="lesson-tab" data-lesson-tab="evaluation" type="button">Evaluación</button><button class="lesson-tab" data-lesson-tab="comments" type="button">Comentarios</button><button class="lesson-tab" data-lesson-tab="resources" type="button">Recursos descargables</button>
+            </nav>
+            <section id="lesson-tab-content" class="lesson-tab-content"></section>
+            <footer class="lesson-navigation"><button id="lesson-previous" class="btn secondary" type="button">← Anterior</button><span id="lesson-position"></span><button id="lesson-next" class="btn primary" type="button">Siguiente →</button></footer>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <section id="exam-view" class="view">
       <div class="exam-head">
         <div class="exam-head-copy"><span id="exam-course-name" class="eyebrow"></span><h2 id="exam-title"></h2><div class="exam-progress-block"><span id="exam-progress" class="exam-progress" aria-live="polite">0 de 0 respondidas</span><div id="exam-progress-track" class="exam-progress-track" role="progressbar" aria-label="Progreso del examen" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><span id="exam-progress-bar"></span></div></div></div>
@@ -178,6 +200,7 @@
         <label>Nombre de la actividad<input id="activity-title" required maxlength="120" placeholder="Ej. Video: Magnitudes físicas"></label>
         <label>Tipo<select id="activity-type"><option value="lesson">Lección</option><option value="video">Video</option><option value="pdf">Archivo PDF</option><option value="download">Material descargable</option><option value="task">Tarea</option><option value="quiz">Cuestionario o evaluación</option><option value="link">Enlace externo</option></select></label>
         <label>Enlace o ruta (opcional)<input id="activity-url" maxlength="500" placeholder="https://… o ./materiales/archivo.pdf"></label>
+        <label>Descripción de la clase<textarea id="activity-description" rows="4" maxlength="1000" placeholder="Explica el objetivo y contenido de esta actividad."></textarea></label>
         <p id="activity-error" class="error" aria-live="polite"></p>
         <button class="btn primary full" type="submit">Guardar actividad</button>
       </form>
@@ -277,6 +300,6 @@
   <footer>Masterfull Academy · Plataforma educativa digital.</footer>
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260716-20"></script>
+  <script src="app.js?v=20260721-2"></script>
 </body>
 </html>
