@@ -4,6 +4,7 @@ const PENDING_RESULTS_KEY = "aulaquiz_pending_results_v1";
 const SOUND_KEY = "aulaquiz_sound_enabled_v1";
 const COURSE_PROGRESS_KEY = "masterfull_course_progress_v1";
 const CATALOG_URL = "./data/catalog.json";
+const LEGACY_MODULE_ROW_PREFIX = "__mfmod__:";
 
 const emptyDrafts = { courses: [], exams: [] };
 let drafts = load(DRAFT_KEY, emptyDrafts);
@@ -16,6 +17,7 @@ let catalogExams = [];
 let dynamicCourses = [];
 let dynamicExams = [];
 let courseChanges = [];
+let legacyCourseModules = new Map();
 let publishedCourses = [];
 let publishedExams = [];
 let results = [];
@@ -66,11 +68,39 @@ function normalizeModules(value) {
     activities: (Array.isArray(module.activities) ? module.activities : []).map((activity, activityIndex) => ({
       id: String(activity.id || `activity-${moduleIndex + 1}-${activityIndex + 1}`),
       title: String(activity.title || activity.name || `Actividad ${activityIndex + 1}`).trim(),
-      type: ["lesson","video","pdf","download","task","quiz","link"].includes(activity.type) ? activity.type : "lesson",
+      type: ["page","lesson","video","pdf","download","task","quiz","link"].includes(activity.type) ? activity.type : "lesson",
       url: String(activity.url || "").trim(),
       description: String(activity.description || "").trim()
     }))
   }));
+}
+function legacyModuleHash(value) {
+  let first = 2166136261;
+  let second = 2246822519;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    first = Math.imul(first ^ code, 16777619);
+    second = Math.imul(second ^ code, 3266489917);
+  }
+  return `${(first >>> 0).toString(16).padStart(8,"0")}${(second >>> 0).toString(16).padStart(8,"0")}`;
+}
+function legacyModulePrefix(courseId) { return `${LEGACY_MODULE_ROW_PREFIX}${legacyModuleHash(String(courseId))}:`; }
+function isLegacyModuleRow(row) { return String(row?.course_id || "").startsWith(LEGACY_MODULE_ROW_PREFIX); }
+function decodeLegacyModuleRows(rows, courses) {
+  const decoded = new Map();
+  const available = rows.filter(row => isLegacyModuleRow(row) && !row.deleted);
+  courses.forEach(course => {
+    const prefix = legacyModulePrefix(course.id);
+    const chunks = available.filter(row => row.course_id.startsWith(prefix)).sort((left, right) => left.course_id.localeCompare(right.course_id));
+    if (!chunks.length) return;
+    try { decoded.set(course.id, normalizeModules(JSON.parse(chunks.map(row => row.description || "").join("")))); }
+    catch (error) { console.error(`Módulos compatibles dañados para ${course.id}:`, error); }
+  });
+  return decoded;
+}
+function isMissingModulesColumn(error) {
+  const detail = `${error?.code || ""} ${error?.message || ""} ${error?.details || ""}`.toLowerCase();
+  return detail.includes("42703") || detail.includes("pgrst204") || (detail.includes("modules") && (detail.includes("column") || detail.includes("schema cache")));
 }
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[char]));
@@ -258,7 +288,9 @@ function applyCourseChanges() {
   dynamicCourses.forEach(course => coursesById.set(course.id, course));
   publishedCourses = [...coursesById.values()].filter(course => !changes.get(course.id)?.deleted).map(course => {
     const change = changes.get(course.id);
-    return change ? { ...course, name: change.name || course.name, description: change.description ?? course.description, modules: change.modules === null || change.modules === undefined ? course.modules : normalizeModules(change.modules) } : course;
+    const compatibleModules = legacyCourseModules.get(course.id);
+    const changedModules = change?.modules === null || change?.modules === undefined ? compatibleModules : normalizeModules(change.modules);
+    return change || compatibleModules ? { ...course, name: change?.name || course.name, description: change?.description ?? course.description, modules: changedModules ?? course.modules } : course;
   });
   const visibleCourseIds = new Set(publishedCourses.map(course => course.id));
   const examsById = new Map(catalogExams.map(exam => [exam.id, exam]));
@@ -283,7 +315,12 @@ async function loadCourseChanges() {
   if (error) {
     console.error("No se pudieron cargar los cambios de cursos:", error);
     courseChanges = [];
-  } else courseChanges = data || [];
+    legacyCourseModules = new Map();
+  } else {
+    const rows = data || [];
+    legacyCourseModules = decodeLegacyModuleRows(rows, [...catalogCourses, ...dynamicCourses]);
+    courseChanges = rows.filter(row => !isLegacyModuleRow(row));
+  }
   applyCourseChanges();
 }
 async function loadDynamicCourses() {
@@ -1548,6 +1585,39 @@ function refreshActiveCourseWorkspace() {
   renderTeacherExamWorkspace(getTeacherCourses(), getTeacherExams());
   bindTeacherExamWorkspaceActions();
 }
+async function saveLegacyCourseModules(courseId, modules) {
+  const prefix = legacyModulePrefix(courseId);
+  const serialized = JSON.stringify(normalizeModules(modules));
+  const chunks = serialized.match(/[\s\S]{1,220}/g) || ["[]"];
+  const { data: existing, error: selectError } = await sb.from("course_changes").select("course_id").like("course_id", `${prefix}%`);
+  if (selectError) return { error: selectError };
+  const rows = chunks.map((chunk, index) => ({
+    course_id: `${prefix}${String(index).padStart(4,"0")}`,
+    name: `Contenido ${index + 1}/${chunks.length}`,
+    description: chunk,
+    deleted: false,
+    updated_by: currentUser.id
+  }));
+  const { error } = await sb.from("course_changes").upsert(rows, { onConflict:"course_id" });
+  if (error) return { error };
+  const activeIds = new Set(rows.map(row => row.course_id));
+  const staleIds = (existing || []).map(row => row.course_id).filter(id => !activeIds.has(id));
+  if (staleIds.length) {
+    const { error: cleanupError } = await sb.from("course_changes").delete().in("course_id", staleIds);
+    if (cleanupError) console.warn("No se pudieron limpiar fragmentos antiguos de módulos:", cleanupError);
+  }
+  return { error:null };
+}
+async function removeLegacyCourseModules(courseId) {
+  const prefix = legacyModulePrefix(courseId);
+  const { error } = await sb.from("course_changes").delete().like("course_id", `${prefix}%`);
+  if (error) console.warn("No se pudo retirar el respaldo compatible de módulos:", error);
+}
+function showCourseContentError(error) {
+  console.error("Guardar contenido del curso:", error);
+  const target = !$("#module-modal")?.classList.contains("hidden") ? $("#module-error") : $("#activity-error");
+  if (target) target.textContent = error?.message || translateError(error);
+}
 async function updateCourseModules(courseId, transform) {
   const localIndex = drafts.courses.findIndex(course => course.id === courseId);
   const course = findCourse(courseId);
@@ -1558,7 +1628,13 @@ async function updateCourseModules(courseId, transform) {
     saveDrafts();
   } else {
     const { error } = await sb.from("course_changes").upsert({ course_id: courseId, name: course.name, description: course.description || "", modules, deleted: false, updated_by: currentUser.id }, { onConflict: "course_id" });
-    if (error) { alert(translateError(error)); return false; }
+    if (error && isMissingModulesColumn(error)) {
+      const compatibleSave = await saveLegacyCourseModules(courseId, modules);
+      if (compatibleSave.error) { showCourseContentError(compatibleSave.error); return false; }
+    } else if (error) {
+      showCourseContentError(error);
+      return false;
+    } else await removeLegacyCourseModules(courseId);
     await loadCourseChanges();
   }
   refreshActiveCourseWorkspace();
